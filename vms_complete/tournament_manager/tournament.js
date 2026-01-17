@@ -526,7 +526,7 @@ async function loadAthletesForSport(tourId, teamId, sportsId) {
           <td>${a.scholarship_name ? `🎓 ${escapeHtml(a.scholarship_name)}` : '-'}</td>
           <td>${a.is_captain ? '⭐ Captain' : ''}</td>
           <td>
-            <button class="btn btn-sm btn-secondary" onclick="editAthlete(${a.person_id}, ${tourId}, ${teamId}, ${sportsId})">Edit</button>
+
             <button class="btn btn-sm btn-danger" onclick="removeAthlete(${a.team_ath_id}, ${tourId}, ${teamId}, ${sportsId})">Remove</button>
           </td>
         </tr>
@@ -569,6 +569,48 @@ $('#athletesFilterTournament')?.addEventListener('change', async (e) => {
     }
   }
 });
+
+function removeAthlete(teamAthId, tourId, teamId, sportsId) {
+  if (!confirm('Are you sure you want to remove this athlete?')) {
+    return;
+  }
+  
+  fetch('api.php?action=remove_athlete', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ 
+      team_ath_id: teamAthId,
+      tour_id: tourId,
+      team_id: teamId,
+      sports_id: sportsId
+    })
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  })
+  .then(data => {
+    if (data.ok) {
+      alert(data.message || 'Athlete removed successfully');
+      // Refresh the athlete list for this team/sport
+      if (typeof loadTeamAthletes === 'function') {
+        loadTeamAthletes(tourId, teamId, sportsId);
+      } else {
+        location.reload();
+      }
+    } else {
+      alert('Error: ' + (data.message || 'Failed to remove athlete'));
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('Failed to remove athlete. Please check the console for details.');
+  });
+}
 
 $('#athletesFilterTeam')?.addEventListener('change', async (e) => {
   const tourId = $('#athletesFilterTournament').value;
@@ -4568,135 +4610,210 @@ async function deleteScore(scoreId) {
   }
 }
 
+// Define reusable sport configurations
+const volleyballConfig = {
+  type: 'sets',
+  label: 'Sets Won',
+  maxSets: 5,
+  fields: [
+    { id: 'set1', label: 'Set 1', type: 'number', min: 0, max: 30 },
+    { id: 'set2', label: 'Set 2', type: 'number', min: 0, max: 30 },
+    { id: 'set3', label: 'Set 3', type: 'number', min: 0, max: 30 },
+    { id: 'set4', label: 'Set 4', type: 'number', min: 0, max: 30 },
+    { id: 'set5', label: 'Set 5', type: 'number', min: 0, max: 30 }
+  ],
+  calculateScore: (values) => {
+    const sets = [values.set1, values.set2, values.set3, values.set4, values.set5]
+      .filter(s => s !== null && s !== undefined && s !== '');
+    return sets.join('-');
+  }
+};
+
+const beachvolleyballConfig = {
+  type: 'sets',
+  label: 'Sets Won',
+  maxSets: 3,
+  fields: [
+    { id: 'set1', label: 'Set 1', type: 'number', min: 0, max: 30 },
+    { id: 'set2', label: 'Set 2', type: 'number', min: 0, max: 30 },
+    { id: 'set3', label: 'Set 3', type: 'number', min: 0, max: 30 }
+  ],
+  calculateScore: (values) => {
+    const sets = [values.set1, values.set2, values.set3]
+      .filter(s => s !== null && s !== undefined && s !== '');
+    return sets.join('-');
+  }
+};
+
+const tennisConfig = {
+  type: 'sets',
+  label: 'Sets Won',
+  maxSets: 5,
+  fields: [
+    { id: 'set1', label: 'Set 1', type: 'number', min: 0, max: 7 },
+    { id: 'set2', label: 'Set 2', type: 'number', min: 0, max: 7 },
+    { id: 'set3', label: 'Set 3', type: 'number', min: 0, max: 7 },
+    { id: 'set4', label: 'Set 4', type: 'number', min: 0, max: 7 },
+    { id: 'set5', label: 'Set 5', type: 'number', min: 0, max: 7 }
+  ],
+  calculateScore: (values) => {
+    const sets = [values.set1, values.set2, values.set3, values.set4, values.set5]
+      .filter(s => s !== null && s !== undefined && s !== '');
+    return sets.join('-');
+  }
+};
+
+const badmintonConfig = {
+  type: 'sets',
+  label: 'Sets Won',
+  maxSets: 3,
+  fields: [
+    { id: 'set1', label: 'Set 1', type: 'number', min: 0, max: 30 },
+    { id: 'set2', label: 'Set 2', type: 'number', min: 0, max: 30 },
+    { id: 'set3', label: 'Set 3', type: 'number', min: 0, max: 30 }
+  ],
+  calculateScore: (values) => {
+    const sets = [values.set1, values.set2, values.set3]
+      .filter(s => s !== null && s !== undefined && s !== '');
+    return sets.join('-');
+  }
+};
+
+const tableTennisConfig = {
+  type: 'sets',
+  label: 'Sets Won',
+  maxSets: 7,
+  fields: [
+    { id: 'set1', label: 'Set 1', type: 'number', min: 0, max: 15 },
+    { id: 'set2', label: 'Set 2', type: 'number', min: 0, max: 15 },
+    { id: 'set3', label: 'Set 3', type: 'number', min: 0, max: 15 },
+    { id: 'set4', label: 'Set 4', type: 'number', min: 0, max: 15 },
+    { id: 'set5', label: 'Set 5', type: 'number', min: 0, max: 15 },
+    { id: 'set6', label: 'Set 6', type: 'number', min: 0, max: 15 },
+    { id: 'set7', label: 'Set 7', type: 'number', min: 0, max: 15 }
+  ],
+  calculateScore: (values) => {
+    const sets = [values.set1, values.set2, values.set3, values.set4, values.set5, values.set6, values.set7]
+      .filter(s => s !== null && s !== undefined && s !== '');
+    return sets.join('-');
+  }
+};
+
+const basketballConfig = {
+  type: 'quarters',
+  label: 'Quarter Scores',
+  description: 'Enter the total score at the end of each quarter (cumulative)',
+  fields: [
+    { id: 'q1', label: 'End of Q1', type: 'number', min: 0, max: 200, placeholder: 'Total after Q1' },
+    { id: 'q2', label: 'End of Q2', type: 'number', min: 0, max: 200, placeholder: 'Total after Q2' },
+    { id: 'q3', label: 'End of Q3', type: 'number', min: 0, max: 200, placeholder: 'Total after Q3' },
+    { id: 'q4', label: 'End of Q4', type: 'number', min: 0, max: 200, placeholder: 'Final score' },
+    { id: 'ot', label: 'End of OT', type: 'number', min: 0, max: 200, optional: true, placeholder: 'After overtime' }
+  ],
+  calculateScore: (values) => {
+    const q1 = parseInt(values.q1) || 0;
+    const q2 = parseInt(values.q2) || 0;
+    const q3 = parseInt(values.q3) || 0;
+    const q4 = parseInt(values.q4) || 0;
+    const ot = parseInt(values.ot) || 0;
+    
+    // Calculate points scored in each quarter
+    const q1Points = q1;
+    const q2Points = q2 - q1;
+    const q3Points = q3 - q2;
+    const q4Points = q4 - q3;
+    const otPoints = ot > 0 ? ot - q4 : 0;
+    
+    // Final total
+    const total = ot > 0 ? ot : q4;
+    
+    // Breakdown shows points scored per quarter
+    const breakdown = `${q1Points}-${q2Points}-${q3Points}-${q4Points}` + 
+                     (ot > 0 ? `-${otPoints}` : '');
+    
+    return `${total} (${breakdown})`;
+  }
+};
+
+const footballConfig = {
+  type: 'halves',
+  label: 'Half Scores',
+  fields: [
+    { id: 'h1', label: '1st Half', type: 'number', min: 0, max: 20 },
+    { id: 'h2', label: '2nd Half', type: 'number', min: 0, max: 20 },
+    { id: 'et', label: 'Extra Time', type: 'number', min: 0, max: 10, optional: true }
+  ],
+  calculateScore: (values) => {
+    const total = (parseInt(values.h1) || 0) + 
+                  (parseInt(values.h2) || 0) + 
+                  (parseInt(values.et) || 0);
+    return values.et ? `${total} (${values.h1}-${values.h2}-${values.et})` : `${total} (${values.h1}-${values.h2})`;
+  }
+};
+
+const swimmingConfig = {
+  type: 'time',
+  label: 'Time',
+  fields: [
+    { id: 'minutes', label: 'Minutes', type: 'number', min: 0, max: 59 },
+    { id: 'seconds', label: 'Seconds', type: 'number', min: 0, max: 59 },
+    { id: 'milliseconds', label: 'Milliseconds', type: 'number', min: 0, max: 999 }
+  ],
+  calculateScore: (values) => {
+    const min = parseInt(values.minutes) || 0;
+    const sec = parseInt(values.seconds) || 0;
+    const ms = parseInt(values.milliseconds) || 0;
+    return min > 0 ? `${min}:${sec.toString().padStart(2,'0')}.${ms.toString().padStart(3,'0')}` 
+                   : `${sec}.${ms.toString().padStart(3,'0')}s`;
+  }
+};
+
+const athleticsConfig = {
+  type: 'time',
+  label: 'Time',
+  fields: [
+    { id: 'minutes', label: 'Minutes', type: 'number', min: 0, max: 59 },
+    { id: 'seconds', label: 'Seconds', type: 'number', min: 0, max: 59 },
+    { id: 'milliseconds', label: 'Milliseconds', type: 'number', min: 0, max: 999 }
+  ],
+  calculateScore: (values) => {
+    const min = parseInt(values.minutes) || 0;
+    const sec = parseInt(values.seconds) || 0;
+    const ms = parseInt(values.milliseconds) || 0;
+    return min > 0 ? `${min}:${sec.toString().padStart(2,'0')}.${ms.toString().padStart(3,'0')}` 
+                   : `${sec}.${ms.toString().padStart(3,'0')}s`;
+  }
+};
+
 // Sport-specific scoring configurations
 const SPORT_SCORING_CONFIGS = {
-  // Set-based sports (volleyball, tennis, badminton, table tennis)
-  volleyball: {
-    type: 'sets',
-    label: 'Sets Won',
-    maxSets: 5,
-    fields: [
-      { id: 'set1', label: 'Set 1', type: 'number', min: 0, max: 30 },
-      { id: 'set2', label: 'Set 2', type: 'number', min: 0, max: 30 },
-      { id: 'set3', label: 'Set 3', type: 'number', min: 0, max: 30 },
-      { id: 'set4', label: 'Set 4', type: 'number', min: 0, max: 30 },
-      { id: 'set5', label: 'Set 5', type: 'number', min: 0, max: 30 }
-    ],
-    calculateScore: (values) => {
-      const sets = [values.set1, values.set2, values.set3, values.set4, values.set5]
-        .filter(s => s !== null && s !== undefined && s !== '');
-      return sets.join('-');
-    }
-  },
+  // Set-based sports with gender categories
+  'volleyball - mens': volleyballConfig,
+  'volleyball - womens': volleyballConfig,
+  'beach volleyball - womens': beachvolleyballConfig,
+  'beach volleyball - mens': beachvolleyballConfig,
   
-  tennis: {
-    type: 'sets',
-    label: 'Sets Won',
-    maxSets: 5,
-    fields: [
-      { id: 'set1', label: 'Set 1', type: 'number', min: 0, max: 7 },
-      { id: 'set2', label: 'Set 2', type: 'number', min: 0, max: 7 },
-      { id: 'set3', label: 'Set 3', type: 'number', min: 0, max: 7 },
-      { id: 'set4', label: 'Set 4', type: 'number', min: 0, max: 7 },
-      { id: 'set5', label: 'Set 5', type: 'number', min: 0, max: 7 }
-    ],
-    calculateScore: (values) => {
-      const sets = [values.set1, values.set2, values.set3, values.set4, values.set5]
-        .filter(s => s !== null && s !== undefined && s !== '');
-      return sets.join('-');
-    }
-  },
+  'tennis - mens': tennisConfig,
+  'tennis - womens': tennisConfig,
+  'tennis - mixed': tennisConfig,
   
-  badminton: {
-    type: 'sets',
-    label: 'Sets Won',
-    maxSets: 3,
-    fields: [
-      { id: 'set1', label: 'Set 1', type: 'number', min: 0, max: 30 },
-      { id: 'set2', label: 'Set 2', type: 'number', min: 0, max: 30 },
-      { id: 'set3', label: 'Set 3', type: 'number', min: 0, max: 30 }
-    ],
-    calculateScore: (values) => {
-      const sets = [values.set1, values.set2, values.set3]
-        .filter(s => s !== null && s !== undefined && s !== '');
-      return sets.join('-');
-    }
-  },
+  'badminton - mens': badmintonConfig,
+  'badminton - womens': badmintonConfig,
+  'badminton - mixed': badmintonConfig,
   
-  'table tennis': {
-    type: 'sets',
-    label: 'Sets Won',
-    maxSets: 7,
-    fields: [
-      { id: 'set1', label: 'Set 1', type: 'number', min: 0, max: 15 },
-      { id: 'set2', label: 'Set 2', type: 'number', min: 0, max: 15 },
-      { id: 'set3', label: 'Set 3', type: 'number', min: 0, max: 15 },
-      { id: 'set4', label: 'Set 4', type: 'number', min: 0, max: 15 },
-      { id: 'set5', label: 'Set 5', type: 'number', min: 0, max: 15 },
-      { id: 'set6', label: 'Set 6', type: 'number', min: 0, max: 15 },
-      { id: 'set7', label: 'Set 7', type: 'number', min: 0, max: 15 }
-    ],
-    calculateScore: (values) => {
-      const sets = [values.set1, values.set2, values.set3, values.set4, values.set5, values.set6, values.set7]
-        .filter(s => s !== null && s !== undefined && s !== '');
-      return sets.join('-');
-    }
-  },
+  'table tennis - mens': tableTennisConfig,
+  'table tennis - womens': tableTennisConfig,
+  'table tennis - mixed': tableTennisConfig,
   
-  // Point-based team sports (basketball, football/soccer)
-  basketball: {
-    type: 'quarters',
-    label: 'Quarter Scores',
-    fields: [
-      { id: 'q1', label: 'Q1', type: 'number', min: 0, max: 100 },
-      { id: 'q2', label: 'Q2', type: 'number', min: 0, max: 100 },
-      { id: 'q3', label: 'Q3', type: 'number', min: 0, max: 100 },
-      { id: 'q4', label: 'Q4', type: 'number', min: 0, max: 100 },
-      { id: 'ot', label: 'OT', type: 'number', min: 0, max: 50, optional: true }
-    ],
-    calculateScore: (values) => {
-      const total = (parseInt(values.q1) || 0) + 
-                    (parseInt(values.q2) || 0) + 
-                    (parseInt(values.q3) || 0) + 
-                    (parseInt(values.q4) || 0) + 
-                    (parseInt(values.ot) || 0);
-      const breakdown = `${values.q1}-${values.q2}-${values.q3}-${values.q4}` + 
-                       (values.ot ? `-${values.ot}` : '');
-      return `${total} (${breakdown})`;
-    }
-  },
+  // Point-based team sports with gender categories
+  'basketball - mens': basketballConfig,
+  'basketball - womens': basketballConfig,
   
-  football: {
-    type: 'halves',
-    label: 'Half Scores',
-    fields: [
-      { id: 'h1', label: '1st Half', type: 'number', min: 0, max: 20 },
-      { id: 'h2', label: '2nd Half', type: 'number', min: 0, max: 20 },
-      { id: 'et', label: 'Extra Time', type: 'number', min: 0, max: 10, optional: true }
-    ],
-    calculateScore: (values) => {
-      const total = (parseInt(values.h1) || 0) + 
-                    (parseInt(values.h2) || 0) + 
-                    (parseInt(values.et) || 0);
-      return values.et ? `${total} (${values.h1}-${values.h2}-${values.et})` : `${total} (${values.h1}-${values.h2})`;
-    }
-  },
+  'football - mens': footballConfig,
+  'football - womens': footballConfig,
   
-  soccer: {
-    type: 'halves',
-    label: 'Half Scores',
-    fields: [
-      { id: 'h1', label: '1st Half', type: 'number', min: 0, max: 20 },
-      { id: 'h2', label: '2nd Half', type: 'number', min: 0, max: 20 },
-      { id: 'et', label: 'Extra Time', type: 'number', min: 0, max: 10, optional: true }
-    ],
-    calculateScore: (values) => {
-      const total = (parseInt(values.h1) || 0) + 
-                    (parseInt(values.h2) || 0) + 
-                    (parseInt(values.et) || 0);
-      return values.et ? `${total} (${values.h1}-${values.h2}-${values.et})` : `${total} (${values.h1}-${values.h2})`;
-    }
-  },
+  'soccer - mens': footballConfig,
+  'soccer - womens': footballConfig,
   
   baseball: {
     type: 'innings',
@@ -4789,45 +4906,20 @@ const SPORT_SCORING_CONFIGS = {
       
       return errors;
     }
+    
   },
   
-  // Time-based individual sports
-  swimming: {
-    type: 'time',
-    label: 'Time',
-    fields: [
-      { id: 'minutes', label: 'Minutes', type: 'number', min: 0, max: 59 },
-      { id: 'seconds', label: 'Seconds', type: 'number', min: 0, max: 59 },
-      { id: 'milliseconds', label: 'Milliseconds', type: 'number', min: 0, max: 999 }
-    ],
-    calculateScore: (values) => {
-      const min = parseInt(values.minutes) || 0;
-      const sec = parseInt(values.seconds) || 0;
-      const ms = parseInt(values.milliseconds) || 0;
-      return min > 0 ? `${min}:${sec.toString().padStart(2,'0')}.${ms.toString().padStart(3,'0')}` 
-                     : `${sec}.${ms.toString().padStart(3,'0')}s`;
-    }
-  },
+  // Time-based individual sports with gender categories
+  'swimming - mens': swimmingConfig,
+  'swimming - womens': swimmingConfig,
+  'swimming - mixed': swimmingConfig,
   
-  athletics: {
-    type: 'time',
-    label: 'Time',
-    fields: [
-      { id: 'minutes', label: 'Minutes', type: 'number', min: 0, max: 59 },
-      { id: 'seconds', label: 'Seconds', type: 'number', min: 0, max: 59 },
-      { id: 'milliseconds', label: 'Milliseconds', type: 'number', min: 0, max: 999 }
-    ],
-    calculateScore: (values) => {
-      const min = parseInt(values.minutes) || 0;
-      const sec = parseInt(values.seconds) || 0;
-      const ms = parseInt(values.milliseconds) || 0;
-      return min > 0 ? `${min}:${sec.toString().padStart(2,'0')}.${ms.toString().padStart(3,'0')}` 
-                     : `${sec}.${ms.toString().padStart(3,'0')}s`;
-    }
-  },
+  'athletics - mens': athleticsConfig,
+  'athletics - womens': athleticsConfig,
+  'athletics - mixed': athleticsConfig,
   
-  // Distance/measurement based
-  'shot put': {
+// Distance/measurement based
+  'shot put - mens': {
     type: 'distance',
     label: 'Distance (meters)',
     fields: [
@@ -4836,7 +4928,16 @@ const SPORT_SCORING_CONFIGS = {
     calculateScore: (values) => `${parseFloat(values.meters).toFixed(2)}m`
   },
   
-  'javelin throw': {
+  'shot put - womens': {
+    type: 'distance',
+    label: 'Distance (meters)',
+    fields: [
+      { id: 'meters', label: 'Meters', type: 'number', min: 0, max: 30, step: 0.01 }
+    ],
+    calculateScore: (values) => `${parseFloat(values.meters).toFixed(2)}m`
+  },
+  
+  'javelin throw - mens': {
     type: 'distance',
     label: 'Distance (meters)',
     fields: [
@@ -4845,7 +4946,16 @@ const SPORT_SCORING_CONFIGS = {
     calculateScore: (values) => `${parseFloat(values.meters).toFixed(2)}m`
   },
   
-  'long jump': {
+  'javelin throw - womens': {
+    type: 'distance',
+    label: 'Distance (meters)',
+    fields: [
+      { id: 'meters', label: 'Meters', type: 'number', min: 0, max: 100, step: 0.01 }
+    ],
+    calculateScore: (values) => `${parseFloat(values.meters).toFixed(2)}m`
+  },
+  
+  'long jump - mens': {
     type: 'distance',
     label: 'Distance (meters)',
     fields: [
@@ -4854,7 +4964,16 @@ const SPORT_SCORING_CONFIGS = {
     calculateScore: (values) => `${parseFloat(values.meters).toFixed(2)}m`
   },
   
-  'high jump': {
+  'long jump - womens': {
+    type: 'distance',
+    label: 'Distance (meters)',
+    fields: [
+      { id: 'meters', label: 'Meters', type: 'number', min: 0, max: 10, step: 0.01 }
+    ],
+    calculateScore: (values) => `${parseFloat(values.meters).toFixed(2)}m`
+  },
+  
+  'high jump - mens': {
     type: 'distance',
     label: 'Height (meters)',
     fields: [
@@ -4862,7 +4981,17 @@ const SPORT_SCORING_CONFIGS = {
     ],
     calculateScore: (values) => `${parseFloat(values.meters).toFixed(2)}m`
   },
-    // Dance Sport - Component-based scoring (solo and pair)
+  
+  'high jump - womens': {
+    type: 'distance',
+    label: 'Height (meters)',
+    fields: [
+      { id: 'meters', label: 'Meters', type: 'number', min: 0, max: 3, step: 0.01 }
+    ],
+    calculateScore: (values) => `${parseFloat(values.meters).toFixed(2)}m`
+  },
+  
+  // Dance Sport - Component-based scoring (solo and pair)
   'dance sport': {
     type: 'components',
     label: 'Dance Sport Scoring',
@@ -5011,7 +5140,6 @@ const SPORT_SCORING_CONFIGS = {
       };
     }
   },
-  
 
   // Default/generic scoring for other sports
   default: {
@@ -5723,7 +5851,7 @@ async function loadVenuesTable() {
           ${v.venue_room ? '• 🚪 ' + escapeHtml(v.venue_room) : ''}
         </div>
         <div class="data-card-actions">
-          <button class="btn btn-sm" onclick="editVenue(${v.venue_id})">Edit</button>
+
           <button class="btn btn-sm btn-${v.is_active == 1 ? 'warning' : 'success'}" 
             onclick="toggleVenue(${v.venue_id}, ${v.is_active})">
             ${v.is_active == 1 ? 'Deactivate' : 'Activate'}

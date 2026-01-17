@@ -3316,91 +3316,79 @@ function generateAttendanceReportHTML(data, dateFrom, dateTo) {
 
 function generatePerformanceReportHTML(data, dateFrom, dateTo) {
   if (!data || data.length === 0) {
-    return `
-      <div class="empty-state">
-        <div style="font-size:48px;margin-bottom:16px;">⭐</div>
-        <p>No performance data found for the selected period.</p>
-        <p style="color:var(--muted);font-size:13px;">Performance ratings will appear here once you've evaluated your athletes.</p>
-      </div>
-    `;
+    return '<div class="empty-state"><div style="font-size:48px;margin-bottom:16px;">⭐</div><p>No performance data found for the selected period.</p><p style="color:var(--muted);font-size:13px;">Performance ratings will appear here once you have evaluated your athletes.</p></div>';
   }
   
-  const totalEvaluations = data.reduce((sum, r) => sum + parseInt(r.total_evaluations || 0), 0);
-  const overallAvg = (data.reduce((sum, r) => sum + parseFloat(r.avg_rating || 0), 0) / data.length).toFixed(2);
+  // Calculate statistics from grouped data
+  let totalEvaluations = 0;
+  let allRatings = [];
+  const playerSet = new Set();
+  
+  data.forEach(activity => {
+    if (activity.evaluations && Array.isArray(activity.evaluations)) {
+      activity.evaluations.forEach(evalItem => {
+        totalEvaluations++;
+        allRatings.push(parseFloat(evalItem.rating || 0));
+        playerSet.add(evalItem.player_name);
+      });
+    }
+  });
+  
+  const overallAvg = allRatings.length > 0 
+    ? (allRatings.reduce((sum, r) => sum + r, 0) / allRatings.length).toFixed(2) 
+    : '0.00';
   
   const teamFilter = $('#report_team_filter');
-  const teamName = teamFilter.value ? teamFilter.options[teamFilter.selectedIndex].text : 'All Teams';
+  const teamName = teamFilter && teamFilter.value ? teamFilter.options[teamFilter.selectedIndex].text : 'All Teams';
+  const sportName = window.COACH_CONTEXT ? window.COACH_CONTEXT.sports_name : 'Unknown Sport';
   
-  // Get sport name from first record (all records have same sport for this coach)
-  const sportName = data.length > 0 && data[0].sports_name ? data[0].sports_name : window.COACH_CONTEXT.sports_name;
+  let html = '<div class="report-summary"><h4>Summary</h4>';
+  html += '<div class="report-stat"><span class="report-stat-label">Sport:</span><span class="report-stat-value" style="color:var(--primary);font-weight:700;">' + escapeHtml(sportName) + '</span></div>';
+  html += '<div class="report-stat"><span class="report-stat-label">Period:</span><span class="report-stat-value">' + (dateFrom || 'All time') + ' to ' + (dateTo || 'Present') + '</span></div>';
+  html += '<div class="report-stat"><span class="report-stat-label">Team Filter:</span><span class="report-stat-value">' + escapeHtml(teamName) + '</span></div>';
+  html += '<div class="report-stat"><span class="report-stat-label">Activities:</span><span class="report-stat-value">' + data.length + '</span></div>';
+  html += '<div class="report-stat"><span class="report-stat-label">Players Evaluated:</span><span class="report-stat-value">' + playerSet.size + '</span></div>';
+  html += '<div class="report-stat"><span class="report-stat-label">Total Evaluations:</span><span class="report-stat-value">' + totalEvaluations + '</span></div>';
   
-  return `
-    <div class="report-summary">
-      <h4>Summary</h4>
-      <div class="report-stat">
-        <span class="report-stat-label">Sport:</span>
-        <span class="report-stat-value" style="color:var(--primary);font-weight:700;">${escapeHtml(sportName)}</span>
-      </div>
-      <div class="report-stat">
-        <span class="report-stat-label">Period:</span>
-        <span class="report-stat-value">${dateFrom || 'All time'} to ${dateTo || 'Present'}</span>
-      </div>
-      <div class="report-stat">
-        <span class="report-stat-label">Team Filter:</span>
-        <span class="report-stat-value">${escapeHtml(teamName)}</span>
-      </div>
-      <div class="report-stat">
-        <span class="report-stat-label">Players Evaluated:</span>
-        <span class="report-stat-value">${data.length}</span>
-      </div>
-      <div class="report-stat">
-        <span class="report-stat-label">Total Evaluations:</span>
-        <span class="report-stat-value">${totalEvaluations}</span>
-      </div>
-      <div class="report-stat">
-        <span class="report-stat-label">Overall Average Rating:</span>
-        <span class="report-stat-value" style="color:${overallAvg >= 8 ? 'var(--success)' : overallAvg >= 6 ? 'var(--warning)' : 'var(--danger)'};">
-          ${overallAvg}/10
-        </span>
-      </div>
-    </div>
+  const avgColor = overallAvg >= 8 ? 'var(--success)' : overallAvg >= 6 ? 'var(--warning)' : 'var(--danger)';
+  html += '<div class="report-stat"><span class="report-stat-label">Overall Average Rating:</span><span class="report-stat-value" style="color:' + avgColor + ';">' + overallAvg + '/10</span></div>';
+  html += '</div>';
+  
+  data.forEach(activity => {
+    html += '<div class="performance-group" style="margin-bottom: 24px;">';
+    html += '<div class="performance-group-header"><div class="group-title">';
+    html += '<h3>🏋️ ' + escapeHtml(activity.activity_name) + '</h3>';
+    html += '<span class="group-count">' + activity.evaluations.length + ' evaluation' + (activity.evaluations.length !== 1 ? 's' : '') + '</span>';
+    html += '</div><span class="group-latest">';
     
-    <div class="table-container">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Player</th>
-            <th>Team</th>
-            <th>Evaluations</th>
-            <th>Avg Rating</th>
-            <th>Max Rating</th>
-            <th>Min Rating</th>
-            <th>Last Evaluated</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${data.map(r => {
-            const avgRating = parseFloat(r.avg_rating || 0);
-            return `
-              <tr>
-                <td><strong>${escapeHtml(r.player_name)}</strong></td>
-                <td>${escapeHtml(r.team_name)}</td>
-                <td>${r.total_evaluations || 0}</td>
-                <td>
-                  <span class="rating-display ${getRatingClass(avgRating)}">
-                    ${avgRating.toFixed(2)}/10
-                  </span>
-                </td>
-                <td>${parseFloat(r.max_rating || 0).toFixed(1)}</td>
-                <td>${parseFloat(r.min_rating || 0).toFixed(1)}</td>
-                <td>${escapeHtml(r.last_evaluated || 'N/A')}</td>
-              </tr>
-            `;
-          }).join('')}
-        </tbody>
-      </table>
-    </div>
-  `;
+    if (activity.duration) {
+      html += escapeHtml(activity.duration);
+    }
+    if (activity.duration && activity.repetition) {
+      html += ' • ';
+    }
+    if (activity.repetition) {
+      html += escapeHtml(activity.repetition);
+    }
+    
+    html += '</span></div>';
+    html += '<div class="table-container"><table class="table">';
+    html += '<thead><tr><th>Player</th><th>Team</th><th>Rating</th><th>Date Evaluated</th></tr></thead><tbody>';
+    
+    activity.evaluations.forEach(evalItem => {
+      const rating = parseFloat(evalItem.rating || 0);
+      html += '<tr>';
+      html += '<td><strong>' + escapeHtml(evalItem.player_name) + '</strong></td>';
+      html += '<td>' + escapeHtml(evalItem.team_name) + '</td>';
+      html += '<td><span class="rating-display ' + getRatingClass(rating) + '">' + rating.toFixed(1) + '/10</span></td>';
+      html += '<td>' + escapeHtml(evalItem.date_eval || 'N/A') + '</td>';
+      html += '</tr>';
+    });
+    
+    html += '</tbody></table></div></div>';
+  });
+  
+  return html;
 }
 
 function generateSessionsReportHTML(data, dateFrom, dateTo) {

@@ -139,6 +139,64 @@ if ($action === 'get_tournament_comprehensive') {
 }
 
 // ==========================================
+// CREATE TRAINING SESSION
+// Add to api.php
+// ==========================================
+if ($action === 'create_training') {
+  try {
+    $stmt = $pdo->prepare("
+      INSERT INTO tbl_train_sked 
+      (tour_id, team_id, sports_id, sked_date, sked_time, venue_id, notes, is_active) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+    ");
+    
+    $stmt->execute([
+      !empty($input['tour_id']) ? (int)$input['tour_id'] : null,
+      (int)$input['team_id'],
+      !empty($input['sports_id']) ? (int)$input['sports_id'] : null,
+      $input['sked_date'],
+      $input['sked_time'],
+      (int)$input['venue_id'],
+      $input['notes'] ?? null
+    ]);
+    
+    out(['ok' => true, 'sked_id' => $pdo->lastInsertId()]);
+  } catch (PDOException $e) {
+    out(['ok' => false, 'error' => $e->getMessage()]);
+  }
+}
+
+// ==========================================
+// UPDATE TRAINING SESSION
+// Add to api.php
+// ==========================================
+if ($action === 'update_training') {
+  try {
+    $stmt = $pdo->prepare("
+      UPDATE tbl_train_sked 
+      SET tour_id = ?, team_id = ?, sports_id = ?, sked_date = ?, 
+          sked_time = ?, venue_id = ?, notes = ?
+      WHERE sked_id = ?
+    ");
+    
+    $stmt->execute([
+      !empty($input['tour_id']) ? (int)$input['tour_id'] : null,
+      (int)$input['team_id'],
+      !empty($input['sports_id']) ? (int)$input['sports_id'] : null,
+      $input['sked_date'],
+      $input['sked_time'],
+      (int)$input['venue_id'],
+      $input['notes'] ?? null,
+      (int)$input['sked_id']
+    ]);
+    
+    out(['ok' => true]);
+  } catch (PDOException $e) {
+    out(['ok' => false, 'error' => $e->getMessage()]);
+  }
+}
+
+// ==========================================
 // STATISTICS
 // ==========================================
 if ($action === 'stats') {
@@ -2803,6 +2861,53 @@ if ($action === 'training') {
     
     $stmt = $pdo->query($sql);
     out($stmt->fetchAll());
+  } catch (PDOException $e) {
+    out(['ok' => false, 'error' => $e->getMessage()]);
+  }
+}
+
+// ==========================================
+// DELETE/CANCEL TRAINING SESSION
+// Add this to api.php
+// ==========================================
+if ($action === 'delete_training') {
+  try {
+    $sked_id = (int)$input['sked_id'];
+    
+    if ($sked_id <= 0) {
+      out(['ok' => false, 'error' => 'Invalid training session ID']);
+    }
+    
+    // Option 1: Soft delete - mark as inactive/cancelled
+    $stmt = $pdo->prepare("UPDATE tbl_train_sked SET is_active = 0 WHERE sked_id = ?");
+    $stmt->execute([$sked_id]);
+    
+    // Option 2: Hard delete - permanently remove
+    // Uncomment this if you want to permanently delete instead
+    // $stmt = $pdo->prepare("DELETE FROM tbl_train_sked WHERE sked_id = ?");
+    // $stmt->execute([$sked_id]);
+    
+    out(['ok' => true, 'message' => 'Training session cancelled successfully']);
+  } catch (PDOException $e) {
+    out(['ok' => false, 'error' => $e->getMessage()]);
+  }
+}
+
+// ==========================================
+// REACTIVATE TRAINING (UNDO CANCELLATION)
+// ==========================================
+if ($action === 'reactivate_training') {
+  try {
+    $sked_id = (int)$input['sked_id'];
+    
+    if ($sked_id <= 0) {
+      out(['ok' => false, 'error' => 'Invalid training session ID']);
+    }
+    
+    $stmt = $pdo->prepare("UPDATE tbl_train_sked SET is_active = 1 WHERE sked_id = ?");
+    $stmt->execute([$sked_id]);
+    
+    out(['ok' => true, 'message' => 'Training session restored']);
   } catch (PDOException $e) {
     out(['ok' => false, 'error' => $e->getMessage()]);
   }

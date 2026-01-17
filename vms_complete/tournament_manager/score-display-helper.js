@@ -1,57 +1,92 @@
 /**
  * Score Display Helper Functions
  * Formats sport-specific scores for better readability
- * UPDATED: Added Chess support
+ * UPDATED: Added Chess support and gender categories (mens, womens, mixed)
  */
 
 // Get sport configuration (matches the tournament.js config)
 function getSportScoringConfig(sportName) {
+  const volleyballConfig = {
+    type: 'sets',
+    labels: ['Set 1', 'Set 2', 'Set 3', 'Set 4', 'Set 5'],
+    separator: '-',
+    maxSets: 5
+  };
+  
+  const tennisConfig = {
+    type: 'sets',
+    labels: ['Set 1', 'Set 2', 'Set 3', 'Set 4', 'Set 5'],
+    separator: '-',
+    maxSets: 5
+  };
+  
+  const badmintonConfig = {
+    type: 'sets',
+    labels: ['Set 1', 'Set 2', 'Set 3'],
+    separator: '-',
+    maxSets: 3
+  };
+  
+  const tableTennisConfig = {
+    type: 'sets',
+    labels: ['Set 1', 'Set 2', 'Set 3', 'Set 4', 'Set 5', 'Set 6', 'Set 7'],
+    separator: '-',
+    maxSets: 7
+  };
+  
+  const basketballConfig = {
+    type: 'quarters',
+    labels: ['Q1', 'Q2', 'Q3', 'Q4', 'OT'],
+    separator: '-',
+    showTotal: true
+  };
+  
+  const footballConfig = {
+    type: 'halves',
+    labels: ['1st Half', '2nd Half', 'Extra Time'],
+    separator: '-',
+    showTotal: true
+  };
+  
+  const swimmingConfig = {
+    type: 'time',
+    format: 'MM:SS.mmm',
+    labels: ['Time']
+  };
+  
+  const athleticsConfig = {
+    type: 'time',
+    format: 'MM:SS.mmm',
+    labels: ['Time']
+  };
+  
   const SPORT_CONFIGS = {
-    // Set-based sports
-    'volleyball': {
-      type: 'sets',
-      labels: ['Set 1', 'Set 2', 'Set 3', 'Set 4', 'Set 5'],
-      separator: '-',
-      maxSets: 5
-    },
-    'tennis': {
-      type: 'sets',
-      labels: ['Set 1', 'Set 2', 'Set 3', 'Set 4', 'Set 5'],
-      separator: '-',
-      maxSets: 5
-    },
-    'badminton': {
-      type: 'sets',
-      labels: ['Set 1', 'Set 2', 'Set 3'],
-      separator: '-',
-      maxSets: 3
-    },
-    'table tennis': {
-      type: 'sets',
-      labels: ['Set 1', 'Set 2', 'Set 3', 'Set 4', 'Set 5', 'Set 6', 'Set 7'],
-      separator: '-',
-      maxSets: 7
-    },
+    // Set-based sports with gender categories
+    'volleyball - mens': volleyballConfig,
+    'volleyball - womens': volleyballConfig,
     
-    // Point-based team sports
-    'basketball': {
-      type: 'quarters',
-      labels: ['Q1', 'Q2', 'Q3', 'Q4', 'OT'],
-      separator: '-',
-      showTotal: true
-    },
-    'football': {
-      type: 'halves',
-      labels: ['1st Half', '2nd Half', 'Extra Time'],
-      separator: '-',
-      showTotal: true
-    },
-    'soccer': {
-      type: 'halves',
-      labels: ['1st Half', '2nd Half', 'Extra Time'],
-      separator: '-',
-      showTotal: true
-    },
+    'tennis - mens': tennisConfig,
+    'tennis - womens': tennisConfig,
+    'tennis - mixed': tennisConfig,
+    
+    'badminton - mens': badmintonConfig,
+    'badminton - womens': badmintonConfig,
+    'badminton - mixed': badmintonConfig,
+    
+    'table tennis - mens': tableTennisConfig,
+    'table tennis - womens': tableTennisConfig,
+    'table tennis - mixed': tableTennisConfig,
+    
+    // Point-based team sports with gender categories
+    'basketball - mens': basketballConfig,
+    'basketball - womens': basketballConfig,
+    
+    'football - mens': footballConfig,
+    'football - womens': footballConfig,
+    
+    'soccer - mens': footballConfig,
+    'soccer - womens': footballConfig,
+    
     'baseball': {
       type: 'innings',
       labels: ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'Extra'],
@@ -61,17 +96,14 @@ function getSportScoringConfig(sportName) {
       showTotal: true
     },
     
-    // Time-based sports
-    'swimming': {
-      type: 'time',
-      format: 'MM:SS.mmm',
-      labels: ['Time']
-    },
-    'athletics': {
-      type: 'time',
-      format: 'MM:SS.mmm',
-      labels: ['Time']
-    },
+    // Time-based sports with gender categories
+    'swimming - mens': swimmingConfig,
+    'swimming - womens': swimmingConfig,
+    'swimming - mixed': swimmingConfig,
+    
+    'athletics - mens': athleticsConfig,
+    'athletics - womens': athleticsConfig,
+    'athletics - mixed': athleticsConfig,
     
     // Distance-based sports
     'shot put': {
@@ -104,7 +136,7 @@ function getSportScoringConfig(sportName) {
       hasAverage: true
     },
     
-    // Result-based sports (NEW)
+    // Result-based sports
     'chess': {
       type: 'result',
       labels: ['Result', 'Moves', 'Time Control'],
@@ -191,7 +223,7 @@ function formatScoreWithLabels(score, sportName, detailed = true) {
   
   const config = getSportScoringConfig(sportName);
   
-  // Handle Chess result-based scoring (NEW)
+  // Handle Chess result-based scoring
   if (config.type === 'result') {
     const parsed = parseChessScore(score);
     if (!parsed) return `<strong>${score}</strong>`;
@@ -524,7 +556,7 @@ function getScoreBreakdown(score, sportName) {
   const config = getSportScoringConfig(sportName);
   const breakdown = [];
   
-  // Handle Chess result-based scoring (NEW)
+  // Handle Chess result-based scoring
   if (config.type === 'result') {
     const parsed = parseChessScore(score);
     if (!parsed) return [];

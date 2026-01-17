@@ -1517,10 +1517,9 @@ if ($action === 'report_performance') {
         t.team_name,
         tp.perf_id,
         tp.rating,
-        tp.remarks,
         tp.date_eval
       FROM tbl_train_perf tp
-      JOIN tbl_training_activity ta ON ta.activity_id = tp.activity_id
+      JOIN tbl_training_activity ta ON ta.activity_id = tp.activitity_id
       JOIN tbl_person p ON p.person_id = tp.person_id
       JOIN tbl_team t ON t.team_id = tp.team_id
       WHERE tp.team_id IN (
@@ -1572,7 +1571,6 @@ if ($action === 'report_performance') {
         'player_name' => $row['player_name'],
         'team_name' => $row['team_name'],
         'rating' => $row['rating'],
-        'remarks' => $row['remarks'],
         'date_eval' => $row['date_eval']
       ];
     }

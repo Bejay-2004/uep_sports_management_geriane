@@ -615,7 +615,7 @@ function showTournamentModal(id = null) {
   
   const modalHTML = `
     <div class="modal active" id="tournamentModal">
-      <div class="modal-content">
+      <div class="modal-content modal-sm">
         <div class="modal-header">
           <h3>${title}</h3>
           <button class="modal-close" onclick="closeModal('tournamentModal')">×</button>
@@ -646,7 +646,11 @@ function showTournamentModal(id = null) {
     </div>
   `;
   
-  $('#modalContainer').innerHTML = modalHTML;
+  // Clean up and add modal
+  const modalContainer = document.getElementById('modalContainer');
+  if (modalContainer) {
+    modalContainer.innerHTML = modalHTML;
+  }
   
   if (isEdit) {
     loadTournamentData(id);
@@ -968,11 +972,13 @@ async function showAddTeamToTournamentModal(tourId) {
     </div>
   `;
   
+  // ✅ FIX: Remove any existing modal first, then add to body
+  closeModal('addTeamModal'); // Clean up any existing
+  
   const tempDiv = document.createElement('div');
   tempDiv.innerHTML = modalHTML;
   document.body.appendChild(tempDiv.firstElementChild);
 }
-
 async function addTeamToTournament(e, tourId) {
   e.preventDefault();
   
@@ -1167,19 +1173,6 @@ async function assignStaffToSport(tourId, teamId, sportsId) {
         <form id="assignStaffForm" onsubmit="saveStaffAssignmentWithAthletes(event, ${tourId}, ${teamId}, ${sportsId})">
           <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
             
-            <!-- Auto-Assign Feature Notice -->
-            <div style="padding: 14px; background: #dbeafe; border-left: 4px solid #3b82f6; border-radius: 6px; margin-bottom: 20px;">
-              <div style="display: flex; gap: 10px; align-items: start;">
-                <span style="font-size: 24px;">💡</span>
-                <div>
-                  <strong style="color: #1e40af; font-size: 13px; display: block; margin-bottom: 4px;">Smart Athlete Assignment</strong>
-                  <p style="font-size: 12px; color: #1e3a8a; margin: 0; line-height: 1.5;">
-                    When you assign a head coach, you can automatically add all athletes they've previously coached in this sport!
-                  </p>
-                </div>
-              </div>
-            </div>
-            
             <!-- Head Coach Selection -->
             <h4 class="modal-section-title">🎯 Primary Staff</h4>
             
@@ -1191,16 +1184,19 @@ async function assignStaffToSport(tourId, teamId, sportsId) {
               </select>
             </div>
             
-            <!-- Auto-Assign Athletes Checkbox -->
+            <!-- Auto-Assign Athletes Checkbox (UPDATED) -->
             <div id="autoAssignContainer" style="display: none; margin-top: 12px;">
               <label style="display: flex; align-items: start; gap: 12px; cursor: pointer; padding: 14px; background: #f0fdf4; border-radius: 8px; border: 2px solid #86efac;">
-                <input type="checkbox" id="auto_assign_athletes" name="auto_assign_athletes" checked style="width: 20px; height: 20px; cursor: pointer; margin-top: 2px; flex-shrink: 0;">
+                <input type="checkbox" id="auto_assign_athletes" name="auto_assign_athletes" style="width: 20px; height: 20px; cursor: pointer; margin-top: 2px; flex-shrink: 0;">
                 <div style="flex: 1;">
                   <div style="font-weight: 600; color: #065f46; margin-bottom: 4px;">
-                    ⚡ Auto-assign coach's athletes
+                    ⚡ Auto-assign coach's athletes (Optional)
                   </div>
                   <div id="athletePreviewText" style="font-size: 12px; color: #047857; line-height: 1.5;">
                     Loading athlete information...
+                  </div>
+                  <div style="font-size: 11px; color: #059669; margin-top: 6px; font-style: italic;">
+                    💡 Uncheck this if you want to manually select athletes instead
                   </div>
                 </div>
               </label>
@@ -1275,11 +1271,13 @@ async function assignStaffToSport(tourId, teamId, sportsId) {
 }
 
 // Preview coach's athletes
+// Preview coach's athletes
 async function previewCoachAthletes(tourId, teamId, sportsId) {
   const coachId = document.getElementById('coach_id').value;
   const container = document.getElementById('autoAssignContainer');
   const detailsContainer = document.getElementById('athletePreviewDetails');
   const previewText = document.getElementById('athletePreviewText');
+  const checkbox = document.getElementById('auto_assign_athletes');
   
   if (!coachId) {
     container.style.display = 'none';
@@ -1289,6 +1287,11 @@ async function previewCoachAthletes(tourId, teamId, sportsId) {
   
   container.style.display = 'block';
   previewText.innerHTML = '<span style="opacity: 0.7;">⏳ Loading athletes...</span>';
+  
+  // ✅ Uncheck by default - user must opt-in
+  if (checkbox) {
+    checkbox.checked = false;
+  }
   
   try {
     const result = await fetchAPI('preview_coach_athletes', { 
@@ -1304,14 +1307,25 @@ async function previewCoachAthletes(tourId, teamId, sportsId) {
       const alreadyAdded = total - newAthletes;
       
       if (total === 0) {
-        previewText.innerHTML = '📝 This coach has no athletes in this sport from previous tournaments.';
+        previewText.innerHTML = '🔍 This coach has no athletes in this sport from previous tournaments.';
         detailsContainer.style.display = 'none';
+        container.style.border = '2px solid #e5e7eb';
+        container.style.background = '#f9fafb';
       } else {
         previewText.innerHTML = `
-          Found <strong>${total}</strong> athlete${total !== 1 ? 's' : ''} 
+          Found <strong>${total}</strong> athlete${total !== 1 ? 's' : ''} from previous tournaments
           (<strong>${newAthletes}</strong> new, ${alreadyAdded} already added)
-          ${newAthletes > 0 ? '<br><small>Click to see details ▼</small>' : ''}
+          ${newAthletes > 0 ? '<br><small>Check the box above to add them automatically</small>' : ''}
         `;
+        
+        // ✅ Update container styling based on availability
+        if (newAthletes > 0) {
+          container.style.border = '2px solid #86efac';
+          container.style.background = '#f0fdf4';
+        } else {
+          container.style.border = '2px solid #fbbf24';
+          container.style.background = '#fef3c7';
+        }
         
         if (newAthletes > 0) {
           // Show detailed list
@@ -1335,7 +1349,7 @@ async function previewCoachAthletes(tourId, teamId, sportsId) {
           detailsContainer.innerHTML = `
             <details style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px;">
               <summary style="cursor: pointer; font-weight: 600; color: #111827; font-size: 13px; user-select: none;">
-                👥 Athletes to be added (${newAthletes})
+                👥 Athletes available for auto-assignment (${newAthletes})
               </summary>
               <div style="margin-top: 12px; max-height: 300px; overflow-y: auto;">
                 ${athletesList}
@@ -1384,10 +1398,10 @@ async function saveStaffAssignmentWithAthletes(e, tourId, teamId, sportsId) {
       closeModal('assignStaffModal');
       loadTeamSports(tourId, teamId);
       
-      // Show success message with athlete count
+      // ✅ Updated success messages
       if (result.athletes_added > 0) {
         showToast(
-          `✅ Staff assigned! Automatically added ${result.athletes_added} athlete${result.athletes_added !== 1 ? 's' : ''}`,
+          `✅ Staff assigned! Automatically added ${result.athletes_added} athlete${result.athletes_added !== 1 ? 's' : ''} from previous tournaments`,
           'success'
         );
         
@@ -1399,7 +1413,11 @@ async function saveStaffAssignmentWithAthletes(e, tourId, teamId, sportsId) {
             showToast(`👥 Added: ${names}${more}`, 'info');
           }, 1500);
         }
+      } else if (data.auto_assign_athletes && data.coach_id) {
+        // Checkbox was checked but no athletes were added
+        showToast('✅ Staff assigned! No new athletes were available to add', 'success');
       } else {
+        // Checkbox was not checked
         showToast('✅ Staff assignments updated!', 'success');
       }
       
@@ -1472,9 +1490,9 @@ function showImportAthletesModal(tourId, teamId, sportsId) {
       </div>
     `;
     
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = modal;
-    document.body.appendChild(tempDiv.firstElementChild);
+const tempDiv = document.createElement('div');
+tempDiv.innerHTML = modal;  // ✅ Use 'modal' instead of 'modalHTML'
+document.body.appendChild(tempDiv.firstElementChild);
   });
 }
 
@@ -2288,9 +2306,7 @@ async function viewAthleteProfile(personId) {
             <button class="btn btn-primary" onclick="printAthleteProfile()">
               🖨️ Print Profile
             </button>
-            <button class="btn btn-success" onclick="editAthleteFromProfile(${personId})">
-              ✏️ Edit Profile
-            </button>
+
             <button class="btn btn-secondary" onclick="closeModal()">Close</button>
           </div>
         </div>
@@ -4128,8 +4144,12 @@ async function loadTraining() {
                 <td>${escapeHtml(t.venue_name || 'N/A')}</td>
                 <td><span class="badge badge-${t.is_active == 1 ? 'active' : 'inactive'}">${t.is_active == 1 ? 'Active' : 'Cancelled'}</span></td>
                 <td>
-                  <button class="btn btn-sm btn-secondary" onclick="editTraining(${t.sked_id})">Edit</button>
-                  <button class="btn btn-sm btn-danger" onclick="deleteTraining(${t.sked_id})">Cancel</button>
+
+  ${t.is_active == 1 ? `
+    <button class="btn btn-sm btn-danger" onclick="cancelTraining(${t.sked_id})">Cancel</button>
+  ` : `
+    <button class="btn btn-sm btn-success" onclick="undoTrainingCancellation(${t.sked_id})">Undo</button>
+  `}
                 </td>
               </tr>
             `).join('')}
@@ -4149,17 +4169,88 @@ function showTrainingModal() {
   alert('Training scheduling - to be implemented');
 }
 
-function editTraining(id) {
-  alert('Edit training - to be implemented');
+// ==========================================
+// CANCEL TRAINING
+// ==========================================
+async function cancelTraining(id) {
+  if (!confirm('Cancel this training session?')) return;
+  
+  try {
+    const result = await fetchAPI('delete_training', { sked_id: id }, 'POST');
+    
+    if (result && result.ok) {
+      showToast('✅ Training session cancelled', 'success');
+      loadTraining();
+    } else {
+      showToast('❌ Error: ' + (result?.error || 'Failed to cancel training'), 'error');
+    }
+  } catch (error) {
+    console.error('Error cancelling training:', error);
+    showToast('❌ Error cancelling training', 'error');
+  }
+}
+
+// ==========================================
+// UNDO TRAINING CANCELLATION
+// ==========================================
+async function undoTrainingCancellation(id) {
+  try {
+    const result = await fetchAPI('reactivate_training', { sked_id: id }, 'POST');
+    
+    if (result && result.ok) {
+      showToast('✅ Training session restored', 'success');
+      loadTraining();
+    } else {
+      showToast('❌ Error: ' + (result?.error || 'Failed to restore training'), 'error');
+    }
+  } catch (error) {
+    console.error('Error restoring training:', error);
+    showToast('❌ Error restoring training', 'error');
+  }
+}
+
+// ==========================================
+// TRAINING FUNCTIONS
+// Replace/add in director.js around line 2780
+// ==========================================
+
+async function editTraining(id) {
+  try {
+    // Fetch all training sessions
+    const params = {};
+    if (currentFilters.sport) params.sport_id = currentFilters.sport;
+    if (currentFilters.team) params.team_id = currentFilters.team;
+    
+    const data = await fetchAPI('training', params);
+    const training = data.find(t => t.sked_id == id);
+    
+    if (training) {
+      // Call the function from director_modals.js
+      showTrainingModal(training);
+    } else {
+      showToast('❌ Training session not found', 'error');
+    }
+  } catch (error) {
+    console.error('Error loading training:', error);
+    showToast('❌ Error loading training session', 'error');
+  }
 }
 
 async function deleteTraining(id) {
   if (!confirm('Cancel this training session?')) return;
   
-  const result = await fetchAPI('delete_training', { sked_id: id }, 'POST');
-  
-  if (result && result.ok) {
-    loadTraining();
+  try {
+    const result = await fetchAPI('delete_training', { sked_id: id }, 'POST');
+    
+    if (result && result.ok) {
+      showToast('✅ Training session cancelled', 'success');
+      loadTraining();
+    } else {
+      showToast('❌ Error: ' + (result?.error || 'Failed to cancel training'), 'error');
+    }
+  } catch (error) {
+    console.error('Error cancelling training:', error);
+    showToast('❌ Error cancelling training', 'error');
   }
 }
 
@@ -5473,9 +5564,9 @@ async function showInventoryTransactionModal(equipId, transType) {
     </div>
   `;
   
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = modal;
-  document.body.appendChild(tempDiv.firstElementChild);
+const tempDiv = document.createElement('div');
+tempDiv.innerHTML = modal;  // ✅ Use 'modal' instead of 'modalHTML'
+document.body.appendChild(tempDiv.firstElementChild);
 }
 
 async function saveInventoryTransaction(event, equipId, transType) {

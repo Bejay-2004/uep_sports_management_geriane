@@ -1050,9 +1050,33 @@ $initials = substr($initials, 0, 2);
 </div>
 
 <!-- REPORTS VIEW -->
+<!-- REPORTS VIEW -->
 <div class="content-view" id="reports-view">
   <div class="view-header">
     <h2>Generate Reports</h2>
+  </div>
+
+  <!-- Report Filters -->
+  <div class="card" style="margin-bottom: 20px;">
+    <h3>Report Filters</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Date From</label>
+        <input type="date" id="report_date_from">
+      </div>
+      
+      <div class="form-group">
+        <label>Date To</label>
+        <input type="date" id="report_date_to">
+      </div>
+      
+      <div class="form-group full-width">
+        <label>Team Filter</label>
+        <select id="report_team_filter">
+          <option value="">All Teams</option>
+        </select>
+      </div>
+    </div>
   </div>
 
 

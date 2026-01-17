@@ -1,7 +1,27 @@
 // ==========================================
 // MODAL MANAGEMENT
 // ==========================================
+// ==========================================
+// SAFE MODAL CREATION HELPER
+// ==========================================
 
+function createModal(modalId, modalHTML) {
+  // Remove any existing modal with this ID
+  const existing = document.getElementById(modalId);
+  if (existing) {
+    existing.remove();
+  }
+  
+  // Create new modal
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = modalHTML;
+  const modal = tempDiv.firstElementChild;
+  
+  // Add to body
+  document.body.appendChild(modal);
+  
+  return modal;
+}
 function closeModal() {
   // Clear umpire assignment modal tracking
   if (window.currentUmpireAssignmentTourId) {
@@ -773,15 +793,16 @@ function showCreateTeamModal(tourId) {
   
   // Remove existing modal and add new one
   closeModal();
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = modal;
-  document.body.appendChild(tempDiv.firstElementChild);
+const tempDiv = document.createElement('div');
+tempDiv.innerHTML = modal;  // ✅ Use 'modal' instead of 'modalHTML'
+document.body.appendChild(tempDiv.firstElementChild);
 }
 
 async function createAndAddTeam(event, tourId) {
   event.preventDefault();
   const formData = new FormData(event.target);
   const teamName = formData.get('team_name').trim();
+  const schoolId = formData.get('school_id'); // This is "" if not selected
   
   if (!teamName) {
     showToast('Please enter a team name', 'error');
@@ -789,9 +810,11 @@ async function createAndAddTeam(event, tourId) {
   }
   
   try {
-    // First create the team
+    // ✅ FIX: Convert empty string to null
     const createResult = await fetchAPI('create_team', { 
-      team_name: teamName 
+      team_name: teamName,
+      school_id: schoolId && schoolId !== '' ? parseInt(schoolId) : null, // ✅ This is the fix!
+      is_active: formData.get('is_active') ? 1 : 0
     }, 'POST');
     
     if (createResult && createResult.ok) {
@@ -805,6 +828,12 @@ async function createAndAddTeam(event, tourId) {
         closeModal();
         loadTournamentTeams(tourId);
         showToast(`✅ Team "${teamName}" created and added to tournament!`, 'success');
+        
+        // Trigger event
+        DashboardEvents.trigger(EVENTS.TEAM_CREATED, { 
+          team_id: createResult.team_id, 
+          team_name: teamName 
+        });
       } else {
         showToast('⚠️ Team created but failed to add to tournament', 'error');
       }
@@ -907,10 +936,11 @@ async function showCreateTeamModal(tourId) {
     </div>
   `;
   
-  closeModal();
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = modal;
-  document.body.appendChild(tempDiv.firstElementChild);
+// Remove existing modal and add new one
+closeModal();
+const tempDiv = document.createElement('div');
+tempDiv.innerHTML = modal;  // ✅ Use 'modal' variable, not 'modalHTML'
+document.body.appendChild(tempDiv.firstElementChild);
 }
 
 // ==========================================
@@ -1207,9 +1237,15 @@ async function showAthleteModal(athlete = null, tourId = null, teamId = null, sp
   }
 }
 
+
 // ==========================================
 // NEW FUNCTION: Load Departments for Selected College
 // Add this function in director_modals.js
+// ==========================================
+
+// ==========================================
+// FIXED: Load Departments for Selected College
+// Replace around line 1250 in director_modals.js
 // ==========================================
 
 async function loadDepartmentsForCollege(collegeCode) {
@@ -1242,14 +1278,18 @@ async function loadDepartmentsForCollege(collegeCode) {
     departmentSelect.disabled = true;
     
     // Fetch colleges and departments in parallel
-    const [colleges, departments] = await Promise.all([
+    const [collegesResponse, departmentsResponse] = await Promise.all([
       fetchAPI('colleges'),
-      fetchAPI('departments')
+      fetchAPI('get_departments')
     ]);
     
+    // ✅ FIX: Handle different response formats
+    let colleges = Array.isArray(collegesResponse) ? collegesResponse : [];
+    let departments = Array.isArray(departmentsResponse) ? departmentsResponse : [];
+    
     console.log('📊 Fetched data:', {
-      colleges: colleges,
-      departments: departments,
+      colleges: colleges.length,
+      departments: departments.length,
       selectedCollegeCode: collegeCode
     });
     
@@ -1319,6 +1359,11 @@ async function loadDepartmentsForCollege(collegeCode) {
 // Add this function in director_modals.js
 // ==========================================
 
+// ==========================================
+// FIXED: Load Courses for Selected Department
+// Replace around line 1340 in director_modals.js
+// ==========================================
+
 async function loadCoursesForDepartment(deptId) {
   const courseSelect = document.getElementById('athlete_course_select');
   
@@ -1342,22 +1387,47 @@ async function loadCoursesForDepartment(deptId) {
     courseSelect.disabled = true;
     
     // Fetch all courses
-    const courses = await fetchAPI('courses');
+    const response = await fetchAPI('get_courses');
+    
+    // ✅ FIX: Handle different response formats
+    let courses = [];
+    
+    if (Array.isArray(response)) {
+      // Response is already an array
+      courses = response;
+    } else if (response && response.ok !== false && Array.isArray(response.courses)) {
+      // Response is an object with courses array
+      courses = response.courses;
+    } else if (response && response.ok !== false) {
+      // Response might be the data itself
+      courses = Object.values(response).filter(item => 
+        item && typeof item === 'object' && item.course_id
+      );
+    } else {
+      console.error('❌ Invalid response format:', response);
+      courseSelect.innerHTML = '<option value="">Error loading courses</option>';
+      courseSelect.disabled = true;
+      return;
+    }
     
     console.log('📊 Fetched courses:', {
       total: courses.length,
-      selectedDeptId: deptId
+      selectedDeptId: deptId,
+      sampleCourse: courses[0]
     });
     
     // Filter courses for this department
     const departmentCourses = courses.filter(c => {
-      const matches = c.dept_id == deptId && c.is_active == 1;
+      if (!c || !c.dept_id) return false;
+      
+      const matches = c.dept_id == deptId;
+      
       console.log(`Checking course ${c.course_code}:`, {
         course_dept_id: c.dept_id,
         target_dept_id: deptId,
-        is_active: c.is_active,
         matches: matches
       });
+      
       return matches;
     });
     
@@ -1390,7 +1460,7 @@ async function loadCoursesForDepartment(deptId) {
     courseSelect.innerHTML = '<option value="">Error loading courses</option>';
     courseSelect.disabled = true;
   }
-}
+} 
 
 // Replace the saveAthlete function in director_modals.js with this enhanced version
 
@@ -1560,9 +1630,10 @@ function showAccountCredentialsModal(athleteName, username, password) {
     </div>
   `;
   
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = modal;
-  document.body.appendChild(tempDiv.firstElementChild);
+// ✅ FIXED: Use correct variable name and DOM manipulation
+const tempDiv = document.createElement('div');
+tempDiv.innerHTML = modal;  // Use 'modal', not 'modalHTML'
+document.body.appendChild(tempDiv.firstElementChild);
 }
 
 // Copy to clipboard function
@@ -1689,17 +1760,23 @@ function closeModal(modalId) {
   }
   
   if (modalId) {
+    // Close specific modal by ID
     const modal = document.getElementById(modalId);
     if (modal) {
-      modal.classList.remove('active');
+      modal.remove();
     }
   } else {
+    // Close all modals
     // Clear modalContainer
-    $('#modalContainer').innerHTML = '';
-    // Also remove any dynamically added modals except logout and print
-    document.querySelectorAll('.modal').forEach(m => {
-      if (m.id !== 'logoutModal' && m.id !== 'printModal') {
-        m.remove();
+    const modalContainer = document.getElementById('modalContainer');
+    if (modalContainer) {
+      modalContainer.innerHTML = '';
+    }
+    
+    // Remove all dynamically created modals
+    document.querySelectorAll('.modal').forEach(modal => {
+      if (modal.id !== 'logoutModal' && modal.id !== 'printModal') {
+        modal.remove();
       }
     });
   }
@@ -1803,6 +1880,183 @@ async function loadTrainorsDropdown(selectId) {
 }
 
 // ==========================================
+// TRAINING FUNCTIONS
+// Replace in director.js - REMOVE the showTrainingModal function
+// ==========================================
+
+// ❌ DELETE THIS FUNCTION - it's causing infinite recursion
+// function showTrainingModal(training = null) {
+//   if (typeof window.showTrainingModal === 'function') {
+//     window.showTrainingModal(training);
+//   } else {
+//     showTrainingModal(training);  // ← This calls itself = infinite loop!
+//   }
+// }
+
+// ✅ KEEP ONLY THESE FUNCTIONS:
+
+async function editTraining(id) {
+  try {
+    // Fetch all training sessions
+    const params = {};
+    if (currentFilters.sport) params.sport_id = currentFilters.sport;
+    if (currentFilters.team) params.team_id = currentFilters.team;
+    
+    const data = await fetchAPI('training', params);
+    const training = data.find(t => t.sked_id == id);
+    
+    if (training) {
+      showTrainingModal(training); // This will call the one from director_modals.js
+    } else {
+      showToast('❌ Training session not found', 'error');
+    }
+  } catch (error) {
+    console.error('Error loading training:', error);
+    showToast('❌ Error loading training session', 'error');
+  }
+}
+
+async function deleteTraining(id) {
+  if (!confirm('Cancel this training session?')) return;
+  
+  try {
+    const result = await fetchAPI('delete_training', { sked_id: id }, 'POST');
+    
+    if (result && result.ok) {
+      showToast('✅ Training session cancelled', 'success');
+      loadTraining();
+    } else {
+      showToast('❌ Error: ' + (result?.error || 'Failed to cancel training'), 'error');
+    }
+  } catch (error) {
+    console.error('Error cancelling training:', error);
+    showToast('❌ Error cancelling training', 'error');
+  }
+}
+
+// ==========================================
+// CASCADING DROPDOWN HELPERS FOR TRAINING MODAL
+// ==========================================
+
+async function updateTrainingTeams() {
+  const tourSelect = document.getElementById('training_tour_id');
+  const teamSelect = document.getElementById('training_team_id');
+  const sportsSelect = document.getElementById('training_sports_id');
+  
+  if (!tourSelect.value) {
+    // Show all teams if no tournament selected
+    const teams = window.trainingModalData?.teams || [];
+    teamSelect.innerHTML = '<option value="">Select Team</option>' +
+      teams.filter(t => t.is_active == 1).map(t => 
+        `<option value="${t.team_id}">${escapeHtml(t.team_name)}</option>`
+      ).join('');
+    return;
+  }
+  
+  try {
+    const tournamentTeams = await fetchAPI('get_tournament_teams', { tour_id: tourSelect.value });
+    
+    if (!tournamentTeams || tournamentTeams.length === 0) {
+      teamSelect.innerHTML = '<option value="">No teams in this tournament</option>';
+      teamSelect.disabled = true;
+      return;
+    }
+    
+    teamSelect.innerHTML = '<option value="">Select Team</option>' +
+      tournamentTeams.map(t => 
+        `<option value="${t.team_id}">${escapeHtml(t.team_name)}</option>`
+      ).join('');
+    teamSelect.disabled = false;
+    
+    // Reset sports
+    sportsSelect.innerHTML = '<option value="">General Training (All Sports)</option>';
+  } catch (error) {
+    console.error('Error loading teams:', error);
+  }
+}
+
+async function updateTrainingSports() {
+  const tourSelect = document.getElementById('training_tour_id');
+  const teamSelect = document.getElementById('training_team_id');
+  const sportsSelect = document.getElementById('training_sports_id');
+  
+  if (!teamSelect.value) {
+    sportsSelect.innerHTML = '<option value="">General Training (All Sports)</option>';
+    return;
+  }
+  
+  if (!tourSelect.value) {
+    // Show all sports if no tournament selected
+    const sports = window.trainingModalData?.sports || [];
+    sportsSelect.innerHTML = '<option value="">General Training (All Sports)</option>' +
+      sports.filter(s => s.is_active == 1).map(s => 
+        `<option value="${s.sports_id}">${escapeHtml(s.sports_name)}</option>`
+      ).join('');
+    return;
+  }
+  
+  try {
+    const teamSports = await fetchAPI('get_team_sports', { 
+      tour_id: tourSelect.value, 
+      team_id: teamSelect.value 
+    });
+    
+    if (!teamSports || teamSports.length === 0) {
+      sportsSelect.innerHTML = '<option value="">General Training (All Sports)</option>';
+      return;
+    }
+    
+    sportsSelect.innerHTML = '<option value="">General Training (All Sports)</option>' +
+      teamSports.map(s => 
+        `<option value="${s.sports_id}">${escapeHtml(s.sports_name)}</option>`
+      ).join('');
+  } catch (error) {
+    console.error('Error loading sports:', error);
+  }
+}
+
+// ==========================================
+// SAVE TRAINING SESSION
+// ==========================================
+
+async function saveTraining(event, skedId) {
+  event.preventDefault();
+  
+  const form = event.target;
+  const formData = new FormData(form);
+  
+  const data = {
+    tour_id: formData.get('tour_id') || null,
+    team_id: formData.get('team_id'),
+    sports_id: formData.get('sports_id') || null,
+    sked_date: formData.get('sked_date'),
+    sked_time: formData.get('sked_time'),
+    venue_id: formData.get('venue_id'),
+    notes: formData.get('notes') || null
+  };
+  
+  if (skedId) {
+    data.sked_id = skedId;
+  }
+  
+  try {
+    const action = skedId ? 'update_training' : 'create_training';
+    const result = await fetchAPI(action, data, 'POST');
+    
+    if (result && result.ok) {
+      closeModal('trainingModal');
+      loadTraining();
+      showToast(skedId ? '✅ Training session updated!' : '✅ Training session scheduled!', 'success');
+    } else {
+      showToast('❌ Error: ' + (result?.error || 'Unknown error'), 'error');
+    }
+  } catch (error) {
+    console.error('Error saving training:', error);
+    showToast('❌ Error saving training session', 'error');
+  }
+}
+
+// ==========================================
 // PRINT STYLES
 // ==========================================
 
@@ -1844,14 +2098,24 @@ if (!document.getElementById('printStyles')) {
 // ==========================================
 // UNIVERSAL MODAL BACKDROP CLICK HANDLER
 // ==========================================
+// ==========================================
+// GLOBAL MODAL BACKDROP CLICK HANDLER
+// ==========================================
+
 document.addEventListener('click', function(e) {
-  // Check if clicked element is a modal (the backdrop)
+  // Check if clicked element is a modal backdrop
   if (e.target.classList.contains('modal') && e.target.classList.contains('active')) {
-    // Only close if clicking directly on the modal backdrop, not modal content
+    // Only close if clicking directly on backdrop, not modal content
     if (e.target === e.currentTarget) {
-      closeModal();
+      const modalId = e.target.id;
+      if (modalId) {
+        closeModal(modalId);
+      }
     }
   }
 });
+
+console.log('✅ Modal backdrop click handler initialized');
+
 
 console.log('✅ Enhanced director_modals.js loaded');

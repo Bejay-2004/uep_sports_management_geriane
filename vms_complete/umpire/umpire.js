@@ -724,6 +724,8 @@ async function loadRankingsFilters() {
   }
 }
 
+// Replace the Rankings change event handler in umpire.js
+
 $('#rankingsTournamentFilter')?.addEventListener('change', async function() {
   const tourId = this.value;
   const content = $('#rankingsContent');
@@ -747,42 +749,79 @@ $('#rankingsTournamentFilter')?.addEventListener('change', async function() {
       return;
     }
     
-    content.innerHTML = `
-      <div class="table-container">
-        <table class="user-table">
-          <thead>
-            <tr>
-              <th>Rank</th>
-              <th>Team</th>
-              <th>Sport</th>
-              <th>GP</th>
-              <th>W</th>
-              <th>L</th>
-              <th>D</th>
-              <th>🥇</th>
-              <th>🥈</th>
-              <th>🥉</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${standings.map((s, idx) => `
-              <tr>
-                <td><strong>${idx + 1}</strong></td>
-                <td><strong>${escapeHtml(s.team_name)}</strong></td>
-                <td>${escapeHtml(s.sports_name)}</td>
-                <td>${s.no_games_played || 0}</td>
-                <td>${s.no_win || 0}</td>
-                <td>${s.no_loss || 0}</td>
-                <td>${s.no_draw || 0}</td>
-                <td>${s.no_gold || 0}</td>
-                <td>${s.no_silver || 0}</td>
-                <td>${s.no_bronze || 0}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    `;
+    // Group standings by sport
+    const groupedBySport = standings.reduce((acc, team) => {
+      const sportName = team.sports_name;
+      if (!acc[sportName]) {
+        acc[sportName] = [];
+      }
+      acc[sportName].push(team);
+      return acc;
+    }, {});
+    
+    // Build HTML with sport groups
+    let html = '';
+    
+    Object.keys(groupedBySport).sort().forEach(sportName => {
+      const teams = groupedBySport[sportName];
+      
+      // Sort teams by wins, then gold medals
+      teams.sort((a, b) => {
+        if (b.no_win !== a.no_win) return b.no_win - a.no_win;
+        return b.no_gold - a.no_gold;
+      });
+      
+      html += `
+        <div style="margin-bottom:32px;">
+          <div style="background:linear-gradient(135deg,#3b82f6,#2563eb);padding:16px 20px;border-radius:12px;margin-bottom:16px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 12px rgba(59,130,246,0.3);">
+            <div style="font-size:24px;">🏆</div>
+            <div style="flex:1;">
+              <div style="font-size:18px;font-weight:700;color:white;">${escapeHtml(sportName)}</div>
+              <div style="font-size:12px;color:#dbeafe;">${teams.length} team${teams.length !== 1 ? 's' : ''}</div>
+            </div>
+          </div>
+          
+          <div class="table-container">
+            <table class="user-table">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Team</th>
+                  <th>GP</th>
+                  <th>W</th>
+                  <th>L</th>
+                  <th>D</th>
+                  <th>🥇</th>
+                  <th>🥈</th>
+                  <th>🥉</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${teams.map((s, idx) => `
+                  <tr>
+                    <td>
+                      <strong style="font-size:16px;color:${idx === 0 ? '#f59e0b' : idx === 1 ? '#6b7280' : idx === 2 ? '#ea580c' : 'inherit'};">
+                        ${idx + 1}${idx === 0 ? ' 🥇' : idx === 1 ? ' 🥈' : idx === 2 ? ' 🥉' : ''}
+                      </strong>
+                    </td>
+                    <td><strong>${escapeHtml(s.team_name)}</strong></td>
+                    <td>${s.no_games_played || 0}</td>
+                    <td style="font-weight:600;color:#10b981;">${s.no_win || 0}</td>
+                    <td style="color:#ef4444;">${s.no_loss || 0}</td>
+                    <td style="color:#6b7280;">${s.no_draw || 0}</td>
+                    <td style="text-align:center;font-weight:700;color:#f59e0b;">${s.no_gold || 0}</td>
+                    <td style="text-align:center;font-weight:700;color:#6b7280;">${s.no_silver || 0}</td>
+                    <td style="text-align:center;font-weight:700;color:#ea580c;">${s.no_bronze || 0}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    });
+    
+    content.innerHTML = html;
   } catch (err) {
     console.error('Error loading standings:', err);
     content.innerHTML = '<div class="empty-state">Error loading standings</div>';
@@ -809,6 +848,10 @@ async function loadMedalsFilters() {
 
 // Replace the medal tally change event handler in umpire.js with this fixed version
 
+// Replace the medal tally change event handler in umpire.js
+
+// Replace the medal tally change event handler in umpire.js
+
 $('#medalsTournamentFilter')?.addEventListener('change', async function() {
   const tourId = this.value;
   const content = $('#medalsContent');
@@ -821,9 +864,10 @@ $('#medalsTournamentFilter')?.addEventListener('change', async function() {
   content.innerHTML = '<div class="loading">Loading medals...</div>';
   
   try {
-    const medals = await fetchAPI('medal_tally', { tour_id: tourId });
+    // First get standings to have sport information
+    const standings = await fetchAPI('standings', { tour_id: tourId });
     
-    if (!medals || medals.length === 0) {
+    if (!standings || standings.length === 0) {
       content.innerHTML = `
         <div class="data-card">
           <p style="color:var(--muted);text-align:center;padding:20px;">No medals awarded yet</p>
@@ -832,66 +876,225 @@ $('#medalsTournamentFilter')?.addEventListener('change', async function() {
       return;
     }
     
-    content.innerHTML = `
-      <div class="table-container">
-        <table class="user-table">
-          <thead>
-            <tr>
-              <th>Rank</th>
-              <th>Team</th>
-              <th>🥇 Gold</th>
-              <th>🥈 Silver</th>
-              <th>🥉 Bronze</th>
-              <th>Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${medals.map((m, idx) => {
-              // Parse medal counts as integers and handle null/undefined
-              const gold = parseInt(m.gold) || 0;
-              const silver = parseInt(m.silver) || 0;
-              const bronze = parseInt(m.bronze) || 0;
-              const total = gold + silver + bronze;
-              
-              console.log(`Team: ${m.team_name}, Gold: ${gold}, Silver: ${silver}, Bronze: ${bronze}, Total: ${total}`);
-              
-              return `
+    // Group by sport and calculate medal totals
+    const groupedBySport = standings.reduce((acc, team) => {
+      const sportName = team.sports_name;
+      if (!acc[sportName]) {
+        acc[sportName] = [];
+      }
+      
+      const gold = parseInt(team.no_gold) || 0;
+      const silver = parseInt(team.no_silver) || 0;
+      const bronze = parseInt(team.no_bronze) || 0;
+      const total = gold + silver + bronze;
+      
+      // Only include teams with medals
+      if (total > 0) {
+        acc[sportName].push({
+          team_name: team.team_name,
+          gold,
+          silver,
+          bronze,
+          total
+        });
+      }
+      
+      return acc;
+    }, {});
+    
+    // Calculate grand totals
+    let grandTotalGold = 0;
+    let grandTotalSilver = 0;
+    let grandTotalBronze = 0;
+    
+    // Build HTML with sport groups
+    let html = '';
+    
+    Object.keys(groupedBySport).sort().forEach(sportName => {
+      const teams = groupedBySport[sportName];
+      
+      // Sort by gold, then silver, then bronze
+      teams.sort((a, b) => {
+        if (b.gold !== a.gold) return b.gold - a.gold;
+        if (b.silver !== a.silver) return b.silver - a.silver;
+        return b.bronze - a.bronze;
+      });
+      
+      // Calculate sport totals
+      const sportGold = teams.reduce((sum, t) => sum + t.gold, 0);
+      const sportSilver = teams.reduce((sum, t) => sum + t.silver, 0);
+      const sportBronze = teams.reduce((sum, t) => sum + t.bronze, 0);
+      const sportTotal = sportGold + sportSilver + sportBronze;
+      
+      grandTotalGold += sportGold;
+      grandTotalSilver += sportSilver;
+      grandTotalBronze += sportBronze;
+      
+      html += `
+        <div style="margin-bottom:24px;">
+          <div style="background:linear-gradient(135deg,#f59e0b,#d97706);padding:12px 16px;border-radius:10px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 3px 10px rgba(245,158,11,0.3);flex-wrap:wrap;gap:8px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="font-size:20px;">🏅</div>
+              <div>
+                <div style="font-size:15px;font-weight:700;color:white;">${escapeHtml(sportName)}</div>
+                <div style="font-size:11px;color:#fef3c7;">${teams.length} team${teams.length !== 1 ? 's' : ''}</div>
+              </div>
+            </div>
+            <div style="background:rgba(255,255,255,0.2);backdrop-filter:blur(10px);padding:6px 12px;border-radius:16px;color:white;font-weight:700;font-size:12px;border:2px solid rgba(255,255,255,0.3);">
+              ${sportTotal}
+            </div>
+          </div>
+          
+          <div class="table-container">
+            <table class="user-table">
+              <thead>
                 <tr>
-                  <td><strong>${idx + 1}</strong></td>
-                  <td><strong>${escapeHtml(m.team_name)}</strong></td>
-                  <td style="text-align:center;font-weight:700;color:#f59e0b;">${gold}</td>
-                  <td style="text-align:center;font-weight:700;color:#6b7280;">${silver}</td>
-                  <td style="text-align:center;font-weight:700;color:#ea580c;">${bronze}</td>
-                  <td style="text-align:center;font-weight:700;font-size:16px;color:#111827;">${total}</td>
+                  <th style="padding:10px 8px;">Rank</th>
+                  <th style="padding:10px 8px;">Team</th>
+                  <th style="padding:10px 8px;text-align:center;">🥇</th>
+                  <th style="padding:10px 8px;text-align:center;">🥈</th>
+                  <th style="padding:10px 8px;text-align:center;">🥉</th>
+                  <th style="padding:10px 8px;text-align:center;">Total</th>
                 </tr>
-              `;
-            }).join('')}
-          </tbody>
-          <tfoot style="border-top:2px solid var(--line);background:#f9fafb;">
-            <tr>
-              <td colspan="2" style="font-weight:700;text-align:right;padding:16px;">Grand Total:</td>
-              <td style="text-align:center;font-weight:700;color:#f59e0b;">
-                ${medals.reduce((sum, m) => sum + (parseInt(m.gold) || 0), 0)}
-              </td>
-              <td style="text-align:center;font-weight:700;color:#6b7280;">
-                ${medals.reduce((sum, m) => sum + (parseInt(m.silver) || 0), 0)}
-              </td>
-              <td style="text-align:center;font-weight:700;color:#ea580c;">
-                ${medals.reduce((sum, m) => sum + (parseInt(m.bronze) || 0), 0)}
-              </td>
-              <td style="text-align:center;font-weight:700;font-size:16px;color:#111827;">
-                ${medals.reduce((sum, m) => {
-                  const gold = parseInt(m.gold) || 0;
-                  const silver = parseInt(m.silver) || 0;
-                  const bronze = parseInt(m.bronze) || 0;
-                  return sum + gold + silver + bronze;
-                }, 0)}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
+              </thead>
+              <tbody>
+                ${teams.map((m, idx) => `
+                  <tr>
+                    <td style="padding:10px 8px;">
+                      <strong style="font-size:14px;color:${idx === 0 ? '#f59e0b' : idx === 1 ? '#6b7280' : idx === 2 ? '#ea580c' : 'inherit'};">
+                        ${idx + 1}${idx < 3 ? (idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉') : ''}
+                      </strong>
+                    </td>
+                    <td style="padding:10px 8px;"><strong style="font-size:13px;">${escapeHtml(m.team_name)}</strong></td>
+                    <td style="text-align:center;font-weight:700;color:#f59e0b;font-size:14px;padding:10px 8px;">${m.gold}</td>
+                    <td style="text-align:center;font-weight:700;color:#6b7280;font-size:14px;padding:10px 8px;">${m.silver}</td>
+                    <td style="text-align:center;font-weight:700;color:#ea580c;font-size:14px;padding:10px 8px;">${m.bronze}</td>
+                    <td style="text-align:center;font-weight:700;font-size:14px;color:#111827;background:#f9fafb;padding:10px 8px;">${m.total}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+              <tfoot style="border-top:2px solid var(--line);background:#fef3c7;">
+                <tr>
+                  <td colspan="2" style="font-weight:700;text-align:right;padding:12px 8px;color:#78350f;font-size:12px;">
+                    Total:
+                  </td>
+                  <td style="text-align:center;font-weight:700;color:#f59e0b;font-size:14px;padding:12px 8px;">${sportGold}</td>
+                  <td style="text-align:center;font-weight:700;color:#6b7280;font-size:14px;padding:12px 8px;">${sportSilver}</td>
+                  <td style="text-align:center;font-weight:700;color:#ea580c;font-size:14px;padding:12px 8px;">${sportBronze}</td>
+                  <td style="text-align:center;font-weight:700;font-size:14px;color:#78350f;background:#fde68a;padding:12px 8px;">${sportTotal}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      `;
+    });
+    
+    // Calculate overall totals per team (across all sports)
+    const teamTotals = {};
+    Object.keys(groupedBySport).forEach(sportName => {
+      groupedBySport[sportName].forEach(team => {
+        if (!teamTotals[team.team_name]) {
+          teamTotals[team.team_name] = { gold: 0, silver: 0, bronze: 0, total: 0 };
+        }
+        teamTotals[team.team_name].gold += team.gold;
+        teamTotals[team.team_name].silver += team.silver;
+        teamTotals[team.team_name].bronze += team.bronze;
+        teamTotals[team.team_name].total += team.total;
+      });
+    });
+    
+    // Convert to array and sort
+    const overallTeams = Object.keys(teamTotals).map(teamName => ({
+      team_name: teamName,
+      ...teamTotals[teamName]
+    })).sort((a, b) => {
+      if (b.gold !== a.gold) return b.gold - a.gold;
+      if (b.silver !== a.silver) return b.silver - a.silver;
+      return b.bronze - a.bronze;
+    });
+    
+    // Add overall standings section
+    html += `
+      <div style="margin-bottom:24px;">
+        <div style="background:linear-gradient(135deg,#10b981,#059669);padding:12px 16px;border-radius:10px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 3px 10px rgba(16,185,129,0.3);flex-wrap:wrap;gap:8px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="font-size:20px;">🏆</div>
+            <div>
+              <div style="font-size:15px;font-weight:700;color:white;">Overall Standings</div>
+              <div style="font-size:11px;color:#d1fae5;">All sports combined</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="table-container">
+          <table class="user-table">
+            <thead>
+              <tr>
+                <th style="padding:10px 8px;">Rank</th>
+                <th style="padding:10px 8px;">Team</th>
+                <th style="padding:10px 8px;text-align:center;">🥇</th>
+                <th style="padding:10px 8px;text-align:center;">🥈</th>
+                <th style="padding:10px 8px;text-align:center;">🥉</th>
+                <th style="padding:10px 8px;text-align:center;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${overallTeams.map((m, idx) => `
+                <tr style="${idx < 3 ? 'background:linear-gradient(to right, ' + (idx === 0 ? '#fef3c7' : idx === 1 ? '#f3f4f6' : '#fed7aa') + ', transparent);' : ''}">
+                  <td style="padding:10px 8px;">
+                    <strong style="font-size:15px;color:${idx === 0 ? '#f59e0b' : idx === 1 ? '#6b7280' : idx === 2 ? '#ea580c' : 'inherit'};">
+                      ${idx + 1}${idx < 3 ? (idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉') : ''}
+                    </strong>
+                  </td>
+                  <td style="padding:10px 8px;"><strong style="font-size:13px;">${escapeHtml(m.team_name)}</strong></td>
+                  <td style="text-align:center;font-weight:700;color:#f59e0b;font-size:14px;padding:10px 8px;">${m.gold}</td>
+                  <td style="text-align:center;font-weight:700;color:#6b7280;font-size:14px;padding:10px 8px;">${m.silver}</td>
+                  <td style="text-align:center;font-weight:700;color:#ea580c;font-size:14px;padding:10px 8px;">${m.bronze}</td>
+                  <td style="text-align:center;font-weight:700;font-size:15px;color:#111827;background:#f9fafb;padding:10px 8px;">${m.total}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
       </div>
     `;
+    
+    // Add grand total section
+    const grandTotal = grandTotalGold + grandTotalSilver + grandTotalBronze;
+    
+    html += `
+      <div style="background:linear-gradient(135deg,#8b5cf6,#7c3aed);padding:16px;border-radius:10px;box-shadow:0 4px 16px rgba(139,92,246,0.4);">
+        <div style="text-align:center;margin-bottom:12px;">
+          <div style="font-size:16px;font-weight:700;color:white;margin-bottom:4px;">🏆 Grand Total</div>
+          <div style="font-size:11px;color:#ede9fe;">Tournament Summary</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:10px;">
+          <div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);padding:12px 8px;border-radius:10px;text-align:center;border:2px solid rgba(255,255,255,0.2);">
+            <div style="font-size:20px;margin-bottom:4px;">🥇</div>
+            <div style="font-size:18px;font-weight:700;color:#fbbf24;">${grandTotalGold}</div>
+            <div style="font-size:10px;color:#ede9fe;margin-top:2px;">Gold</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);padding:12px 8px;border-radius:10px;text-align:center;border:2px solid rgba(255,255,255,0.2);">
+            <div style="font-size:20px;margin-bottom:4px;">🥈</div>
+            <div style="font-size:18px;font-weight:700;color:#d1d5db;">${grandTotalSilver}</div>
+            <div style="font-size:10px;color:#ede9fe;margin-top:2px;">Silver</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);padding:12px 8px;border-radius:10px;text-align:center;border:2px solid rgba(255,255,255,0.2);">
+            <div style="font-size:20px;margin-bottom:4px;">🥉</div>
+            <div style="font-size:18px;font-weight:700;color:#fdba74;">${grandTotalBronze}</div>
+            <div style="font-size:10px;color:#ede9fe;margin-top:2px;">Bronze</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.25);backdrop-filter:blur(10px);padding:12px 8px;border-radius:10px;text-align:center;border:2px solid rgba(255,255,255,0.3);">
+            <div style="font-size:20px;margin-bottom:4px;">🏆</div>
+            <div style="font-size:18px;font-weight:700;color:white;">${grandTotal}</div>
+            <div style="font-size:10px;color:#ede9fe;margin-top:2px;">Total</div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    content.innerHTML = html;
   } catch (err) {
     console.error('Error loading medals:', err);
     content.innerHTML = '<div class="empty-state">Error loading medal tally</div>';

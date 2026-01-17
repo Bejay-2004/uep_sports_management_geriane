@@ -227,7 +227,7 @@ $sports_id = (int)($_SESSION['user']['sports_id'] ?? 0); // Will be NULL/0 for s
     </div>
 
     <div class="overview-section">
-      <h2>📊 Quick Stats</h2>
+      <h2>📊 Quick Matches & Training Preview </h2>
       <div id="overviewContent">
         <div class="loading">Loading overview data...</div>
       </div>
@@ -292,12 +292,7 @@ $sports_id = (int)($_SESSION['user']['sports_id'] ?? 0); // Will be NULL/0 for s
   <!-- MATCHES VIEW -->
   <section class="content-view" id="matches-view">
     <div class="view-header">
-      <button class="btn btn-primary" onclick="showMatchModal()">
-        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
-        </svg>
-        Schedule Match
-      </button>
+
     </div>
     <div id="matchesContent">
       <div class="loading">Loading matches...</div>
@@ -324,12 +319,7 @@ $sports_id = (int)($_SESSION['user']['sports_id'] ?? 0); // Will be NULL/0 for s
   <!-- TRAINING VIEW -->
   <section class="content-view" id="training-view">
     <div class="view-header">
-      <button class="btn btn-primary" onclick="showTrainingModal()">
-        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
-        </svg>
-        Add Training
-      </button>
+
     </div>
     <div id="trainingContent">
       <div class="loading">Loading training...</div>

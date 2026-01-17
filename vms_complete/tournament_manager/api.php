@@ -332,6 +332,67 @@ if ($action === 'pending_athletes') {
   }
 }
 
+// ==========================================
+// REMOVE ATHLETE
+// ==========================================
+
+if ($action === 'remove_athlete') {
+  if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    out(['ok'=>false,'message'=>'Method not allowed']);
+  }
+
+  try {
+    $data = json_decode(file_get_contents('php://input'), true);
+    $team_ath_id = isset($data['team_ath_id']) ? (int)$data['team_ath_id'] : 0;
+    
+    if ($team_ath_id <= 0) {
+      http_response_code(400);
+      out(['ok'=>false,'message'=>'Invalid athlete ID']);
+    }
+    
+    // Verify the athlete exists and belongs to a sport this manager oversees
+    $checkStmt = $pdo->prepare("
+      SELECT ta.team_ath_id, ta.tour_id, ta.sports_id, ta.team_id
+      FROM tbl_team_athletes ta
+      INNER JOIN tbl_sports_team st ON st.tour_id = ta.tour_id 
+                                     AND st.team_id = ta.team_id 
+                                     AND st.sports_id = ta.sports_id
+                                     AND st.tournament_manager_id = :person_id
+      WHERE ta.team_ath_id = :team_ath_id
+    ");
+    $checkStmt->execute(['team_ath_id' => $team_ath_id, 'person_id' => $person_id]);
+    $athlete = $checkStmt->fetch();
+    
+    if (!$athlete) {
+      http_response_code(403);
+      out(['ok'=>false,'message'=>'Access denied or athlete not found']);
+    }
+    
+    // Delete the athlete
+    $stmt = $pdo->prepare("
+      DELETE FROM tbl_team_athletes 
+      WHERE team_ath_id = :team_ath_id
+    ");
+    $stmt->execute(['team_ath_id' => $team_ath_id]);
+    
+    // Log the removal
+    $logStmt = $pdo->prepare("
+      INSERT INTO tbl_logs (user_id, log_event, log_date, module_name)
+      VALUES (:user_id, :log_event, NOW(), 'Tournament Management')
+    ");
+    $logStmt->execute([
+      'user_id' => $user_id,
+      'log_event' => "Removed athlete (team_ath_id: $team_ath_id)"
+    ]);
+    
+    out(['ok'=>true,'message'=>'Athlete removed successfully']);
+  } catch (PDOException $e) {
+    http_response_code(500);
+    out(['ok' => false, 'message' => 'Database error', 'error' => $e->getMessage()]);
+  }
+}
+
 function ensureMatchParticipantsTable($pdo) {
   try {
     $pdo->exec("
@@ -808,6 +869,8 @@ if ($action === 'umpires') {
     out(['ok' => false, 'message' => 'Database error', 'error' => $e->getMessage()]);
   }
 }
+
+
 
 // ==========================================
 // VENUES
