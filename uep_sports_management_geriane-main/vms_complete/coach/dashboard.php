@@ -1,0 +1,1787 @@
+<?php
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . "/../auth/guard.php";
+require_role("coach");
+
+$full_name = $_SESSION['user']['full_name'] ?? 'Unknown User';
+$coach_person_id = (int)$_SESSION['user']['person_id'];
+$sports_id = (int)($_SESSION['user']['sports_id'] ?? 0);
+
+// Get the sport name from database
+$sports_name = 'Unknown Sport';
+try {
+  $stmt = $pdo->prepare("SELECT sports_name FROM tbl_sports WHERE sports_id = :sports_id LIMIT 1");
+  $stmt->execute(['sports_id' => $sports_id]);
+  $sport = $stmt->fetch();
+  if ($sport) {
+    $sports_name = $sport['sports_name'];
+  }
+} catch (PDOException $e) {
+  $sports_name = "Sport #$sports_id";
+}
+
+// Get initials for avatar
+$names = explode(' ', $full_name);
+$initials = '';
+foreach ($names as $n) {
+    $initials .= strtoupper(substr($n, 0, 1));
+}
+$initials = substr($initials, 0, 2);
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Coach Dashboard - UEP Sports</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="<?= BASE_URL ?>/coach/coach.css">
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+  <div class="logo">
+      <img src="<?= BASE_URL ?>/assets/images/uep.png" alt="UEP" style="width:100%;height:100%;object-fit:contain;">
+    </div>
+    <div class="sidebar-title">
+      <h3>UEP Sports</h3>
+      <p>Coach Portal</p>
+    </div>
+  </div>
+
+<nav class="sidebar-nav">
+    <button class="nav-link active" data-view="overview">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7"></rect>
+        <rect x="14" y="3" width="7" height="7"></rect>
+        <rect x="14" y="14" width="7" height="7"></rect>
+        <rect x="3" y="14" width="7" height="7"></rect>
+      </svg>
+      <span>Overview</span>
+    </button>
+
+    <!-- Training Section -->
+    <button class="nav-link nav-parent" data-parent="training">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M12 6v6l4 2"></path>
+      </svg>
+      <span>Training</span>
+      <svg class="nav-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </button>
+    
+    <div class="nav-submenu" data-parent="training">
+      <button class="nav-link nav-child" data-view="training">
+        <span>Sessions</span>
+      </button>
+      <button class="nav-link nav-child" data-view="trainees">
+        <span>Trainees</span>
+      </button>
+      <button class="nav-link nav-child" data-view="activities">
+        <span>Activities</span>
+      </button>
+      <button class="nav-link nav-child" data-view="attendance">
+        <span>Attendance</span>
+      </button>
+      <button class="nav-link nav-child" data-view="performance">
+        <span>Performance</span>
+      </button>
+    </div>
+
+    <!-- Tournaments Section -->
+    <button class="nav-link nav-parent" data-parent="tournaments">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <path d="M16 10a4 4 0 0 1-8 0"></path>
+      </svg>
+      <span>Tournaments</span>
+      <svg class="nav-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </button>
+    
+    <div class="nav-submenu" data-parent="tournaments">
+      <button class="nav-link nav-child" data-view="tournaments">
+        <span>Schedules</span>
+      </button>
+      <button class="nav-link nav-child" data-view="teams">
+        <span>Teams</span>
+      </button>
+      <button class="nav-link nav-child" data-view="players">
+        <span>Players</span>
+      </button>
+      <button class="nav-link nav-child" data-view="match-history">
+        <span>Match History</span>
+      </button>
+    </div>
+
+    <button class="nav-link" data-view="standings">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+      </svg>
+      <span>Statistics</span>
+    </button>
+
+    <button class="nav-link" data-view="reports">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="16" y1="13" x2="8" y2="13"></line>
+        <line x1="16" y1="17" x2="8" y2="17"></line>
+        <polyline points="10 9 9 9 8 9"></polyline>
+      </svg>
+      <span>Reports</span>
+    </button>
+  </nav>
+
+  
+
+  <div class="sidebar-footer">
+    <form method="post" action="<?= BASE_URL ?>/auth/logout.php" style="margin:0;width:100%;">
+      <button type="submit" class="logout-link">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+        <span>Logout</span>
+      </button>
+    </form>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="main-content">
+  
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <button class="menu-toggle" id="menuToggle">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="12" x2="21" y2="12"></line>
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <line x1="3" y1="18" x2="21" y2="18"></line>
+      </svg>
+    </button>
+    
+    <h1 id="pageTitle">Dashboard Overview</h1>
+    
+    <div class="user-info">
+      <div class="user-avatar"><?= htmlspecialchars($initials) ?></div>
+      <div class="user-details">
+        <div class="user-name"><?= htmlspecialchars($full_name) ?></div>
+        <div class="user-role">Coach • <?= htmlspecialchars($sports_name) ?></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OVERVIEW VIEW -->
+  <div class="content-view active" id="overview-view">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#3b82f6,#2563eb);">👥</div>
+        <div class="stat-info">
+          <div class="stat-value" id="statPlayers">0</div>
+          <div class="stat-label">Active Players</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#10b981,#059669);">📅</div>
+        <div class="stat-info">
+          <div class="stat-value" id="statSessions">0</div>
+          <div class="stat-label">Sessions This Month</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706);">📊</div>
+        <div class="stat-info">
+          <div class="stat-value" id="statAttendance">0%</div>
+          <div class="stat-label">Avg Attendance Rate</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed);">🏆</div>
+        <div class="stat-info">
+          <div class="stat-value" id="statTeams">0</div>
+          <div class="stat-label">My Teams</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="overview-section">
+      <h2>Upcoming Training Sessions</h2>
+      <div class="data-grid" id="upcomingSessions">
+        <div class="loading">Loading sessions...</div>
+      </div>
+    </div>
+
+    <div class="overview-section">
+      <h2>Recent Activity</h2>
+      <div id="recentActivity">
+        <div class="loading">Loading activity...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLAYERS VIEW -->
+  <div class="content-view" id="players-view">
+    <div class="view-header">
+      <h2>My Players</h2>
+      <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; flex: 1;">
+        <input class="search" id="playersSearch" placeholder="Search player/team..." style="flex: 1;">
+        <a href="<?= BASE_URL ?>/coach/add_player.php" class="btn">+ Add Player</a>
+      </div>
+    </div>
+    <div class="table-container">
+      <table class="table" id="playersTable">
+        <thead><tr><th>Player</th><th>Team</th><th>Captain</th><th>Actions</th></tr></thead>
+        <tbody><tr><td colspan="4">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TEAMS VIEW -->
+  <div class="content-view" id="teams-view">
+    <div class="view-header">
+      <h2>My Teams</h2>
+      <input class="search" id="teamsSearch" placeholder="Search team...">
+    </div>
+    <div class="table-container">
+      <table class="table" id="teamsTable">
+        <thead><tr><th>Team</th><th>Tournament</th><th>Coach</th><th>Assistant Coach</th></tr></thead>
+        <tbody><tr><td colspan="4">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+<!-- Replace the TRAINING VIEW section in dashboard.php with this -->
+
+<!-- TRAINING VIEW -->
+<div class="content-view" id="training-view">
+<div class="view-header">
+  <h2>Training Sessions</h2>
+  <div style="display:flex;gap:12px;align-items:center;">
+    <select id="sessionSortSelect" style="padding:8px 12px;border-radius:8px;border:1px solid var(--line);">
+      <option value="upcoming">📅 Upcoming First</option>
+      <option value="recent">🕐 Most Recent First</option>
+      <option value="oldest">📆 Oldest First</option>
+      <option value="team">👥 By Team Name</option>
+    </select>
+    <button class="btn btn-primary" id="createSessionBtn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      Create New Session
+    </button>
+  </div>
+</div>
+  
+  <!-- Multi-Step Session Creation Form -->
+  <div class="card" id="sessionFormCard" style="display:none;margin-bottom:20px;">
+    <h3>Create Training Session</h3>
+    
+    <!-- Step Indicators -->
+    <div class="training-steps">
+      <div class="training-step active" data-step="1">
+        <div class="step-number">1</div>
+        <div class="step-label">Basic Info</div>
+      </div>
+      <div class="training-step" data-step="2">
+        <div class="step-number">2</div>
+        <div class="step-label">Activities</div>
+      </div>
+      <div class="training-step" data-step="3">
+        <div class="step-number">3</div>
+        <div class="step-label">Equipment</div>
+      </div>
+      <div class="training-step" data-step="4">
+        <div class="step-number">4</div>
+        <div class="step-label">Participants</div>
+      </div>
+      <div class="training-step" data-step="5">
+        <div class="step-number">5</div>
+        <div class="step-label">Review</div>
+      </div>
+    </div>
+    
+    <!-- Step 1: Basic Info -->
+    <div class="training-step-content active" id="training-step-1">
+      <h4>Step 1: Basic Session Information</h4>
+      <div class="form-grid">
+        <div class="form-group full-width">
+          <label>Team *</label>
+          <select id="session_team_id" required>
+            <option value="">-- Select Team --</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Date *</label>
+          <input type="date" id="training_date" required>
+        </div>
+        
+        <div class="form-group">
+          <label>Time *</label>
+          <input type="time" id="start_time" required>
+        </div>
+        
+        <div class="form-group full-width">
+          <label>Venue *</label>
+          <select id="session_venue_id" required>
+            <option value="">-- Select Venue --</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="form-actions full-width">
+        <button type="button" class="btn btn-secondary" id="cancelSessionBtn">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="goToTrainingStep(2)">Next: Select Activities →</button>
+      </div>
+    </div>
+    
+    <!-- Step 2: Select Activities -->
+    <div class="training-step-content" id="training-step-2">
+      <h4>Step 2: Select Training Activities</h4>
+      <p style="color:var(--muted);margin-bottom:16px;">Choose the drills and exercises for this session</p>
+      
+      <div id="activitiesSelectionGrid" class="selection-grid">
+        <!-- Activities will be loaded here -->
+      </div>
+      
+      <div class="form-actions full-width">
+        <button type="button" class="btn btn-secondary" onclick="goToTrainingStep(1)">← Back</button>
+        <button type="button" class="btn btn-primary" onclick="goToTrainingStep(3)">Next: Select Equipment →</button>
+      </div>
+    </div>
+    
+    <!-- Step 3: Select Equipment -->
+    <div class="training-step-content" id="training-step-3">
+      <h4>Step 3: Select Equipment</h4>
+      <p style="color:var(--muted);margin-bottom:16px;">Choose equipment needed for this training session</p>
+      
+      <div id="equipmentSelectionGrid" class="equipment-grid">
+        <!-- Equipment will be loaded here -->
+      </div>
+      
+      <div class="form-actions full-width">
+        <button type="button" class="btn btn-secondary" onclick="goToTrainingStep(2)">← Back</button>
+        <button type="button" class="btn btn-primary" onclick="goToTrainingStep(4)">Next: Select Participants →</button>
+      </div>
+    </div>
+    
+    <!-- Step 4: Select Participants -->
+    <div class="training-step-content" id="training-step-4">
+      <h4>Step 4: Select Participants</h4>
+      <p style="color:var(--muted);margin-bottom:16px;">Choose athletes and trainees for this session</p>
+      
+      <div id="participantsContainer">
+        <h5 style="margin:16px 0 12px 0;font-size:14px;font-weight:700;">🤾 Athletes</h5>
+        <div id="athletesSelectionGrid" class="selection-grid">
+          <!-- Athletes will be loaded here -->
+        </div>
+        
+        <h5 style="margin:24px 0 12px 0;font-size:14px;font-weight:700;">🎓 Trainees</h5>
+        <div id="traineesSelectionGrid" class="selection-grid">
+          <!-- Trainees will be loaded here -->
+        </div>
+      </div>
+      
+      <div class="form-actions full-width">
+        <button type="button" class="btn btn-secondary" onclick="goToTrainingStep(3)">← Back</button>
+        <button type="button" class="btn btn-primary" onclick="goToTrainingStep(5)">Review Session →</button>
+      </div>
+    </div>
+    
+    <!-- Step 5: Review -->
+    <div class="training-step-content" id="training-step-5">
+      <h4>Step 5: Review & Confirm</h4>
+      <p style="color:var(--muted);margin-bottom:16px;">Verify all session details before saving</p>
+      
+      <div class="session-summary">
+        <h5 style="margin-bottom:12px;font-size:14px;font-weight:700;">📋 Session Summary</h5>
+        
+        <div class="summary-row">
+          <span class="summary-label">Team:</span>
+          <span class="summary-value" id="summary-team">-</span>
+        </div>
+        
+        <div class="summary-row">
+          <span class="summary-label">Date:</span>
+          <span class="summary-value" id="summary-date">-</span>
+        </div>
+        
+        <div class="summary-row">
+          <span class="summary-label">Time:</span>
+          <span class="summary-value" id="summary-time">-</span>
+        </div>
+        
+        <div class="summary-row">
+          <span class="summary-label">Venue:</span>
+          <span class="summary-value" id="summary-venue">-</span>
+        </div>
+        
+        <div class="summary-row">
+          <span class="summary-label">Activities:</span>
+          <span class="summary-value" id="summary-activities">0 selected</span>
+        </div>
+        
+        <div class="summary-row">
+          <span class="summary-label">Equipment:</span>
+          <span class="summary-value" id="summary-equipment">0 items</span>
+        </div>
+        
+        <div class="summary-row">
+          <span class="summary-label">Participants:</span>
+          <span class="summary-value" id="summary-participants">0 selected</span>
+        </div>
+      </div>
+      
+      <div class="alert alert-info" style="margin-top:16px;">
+        <strong>ℹ️ Next Steps:</strong> After saving, you can mark attendance and rate performance for this session.
+      </div>
+      
+      <div class="form-actions full-width">
+        <button type="button" class="btn btn-secondary" onclick="goToTrainingStep(4)">← Back</button>
+        <button type="button" class="btn btn-success" id="saveCompleteSessionBtn">✓ Save Training Session</button>
+      </div>
+    </div>
+    
+    <div class="msg" id="sessionMsg" style="display:none;"></div>
+  </div>
+
+  <!-- Sessions List -->
+  <div id="sessionsListContent">
+    <div class="loading">Loading sessions...</div>
+  </div>
+</div>
+
+<!-- Session Details Modal -->
+<div class="modal-overlay" id="sessionDetailsModal">
+  <div class="modal-content" style="max-width: 800px;">
+    <div class="modal-header">
+      <h3>📋 Training Session Details</h3>
+      <button class="modal-close" onclick="closeSessionDetailsModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <!-- Session Basic Info -->
+      <div class="session-info-card">
+        <h4>Session Information</h4>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Team:</span>
+            <span class="info-value" id="detail-team">-</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Date:</span>
+            <span class="info-value" id="detail-date">-</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Time:</span>
+            <span class="info-value" id="detail-time">-</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Venue:</span>
+            <span class="info-value" id="detail-venue">-</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activities Section -->
+      <div class="session-section">
+        <h4>🏋️ Training Activities</h4>
+        <div id="detailActivitiesList" class="details-list">
+          <p style="color:var(--muted);">Loading...</p>
+        </div>
+      </div>
+
+      <!-- Equipment Section (ADD THIS) -->
+<div class="session-section">
+  <h4>🏋️ Equipment</h4>
+  <div id="detailEquipmentList" class="details-list">
+    <p style="color:var(--muted);">Loading...</p>
+  </div>
+</div>
+
+      <!-- Participants Section -->
+      <div class="session-section">
+        <h4>👥 Participants</h4>
+        <div class="participants-summary" id="participantsSummary">
+          <span class="summary-badge">0 Athletes</span>
+          <span class="summary-badge">0 Trainees</span>
+        </div>
+        <div id="detailParticipantsList" class="details-list">
+          <p style="color:var(--muted);">Loading...</p>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="modal-actions" style="margin-top:24px;border-top:1px solid var(--line);padding-top:24px;">
+        <button class="btn btn-secondary" onclick="closeSessionDetailsModal()">Close</button>
+        <button class="btn btn-primary" onclick="goToAttendanceFromDetails()">📝 Mark Attendance</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.session-info-card {
+  background: #f9fafb;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.session-info-card h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-label {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.info-value {
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.session-section {
+  margin-bottom: 24px;
+}
+
+.session-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.details-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.detail-item:hover {
+  background: #f9fafb;
+  border-color: var(--primary);
+}
+
+.detail-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.detail-icon.activity {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+}
+
+.detail-icon.athlete {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+}
+
+.detail-icon.trainee {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.detail-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.detail-name {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.detail-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.participants-summary {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.summary-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: #dbeafe;
+  color: #1e40af;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.empty-details {
+  text-align: center;
+  padding: 24px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.session-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.btn-small {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .participants-summary {
+    flex-wrap: wrap;
+  }
+  
+  .session-card-actions {
+    flex-direction: column;
+  }
+  
+  .session-card-actions .btn {
+    width: 100%;
+  }
+}
+</style>
+
+<style>
+/* Training Steps Styling */
+.training-steps {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 2px solid var(--line);
+  gap: 16px;
+}
+
+.training-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  opacity: 0.5;
+  transition: all 0.3s;
+}
+
+.training-step.active,
+.training-step.completed {
+  opacity: 1;
+}
+
+.training-step::after {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  width: 100%;
+  height: 2px;
+  background: var(--line);
+  z-index: -1;
+}
+
+.training-step:last-child::after {
+  display: none;
+}
+
+.training-step.completed::after {
+  background: var(--success);
+}
+
+.step-number {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--line);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  transition: all 0.3s;
+}
+
+.training-step.active .step-number {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+}
+
+.training-step.completed .step-number {
+  background: var(--success);
+  color: white;
+}
+
+.step-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.training-step-content {
+  display: none;
+}
+
+.training-step-content.active {
+  display: block;
+}
+
+.training-step-content h4 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--text);
+}
+
+/* Selection Grid */
+.selection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.selection-card {
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.selection-card:hover {
+  border-color: var(--primary);
+  background: #eff6ff;
+}
+
+.selection-card.selected {
+  border-color: var(--primary);
+  background: #dbeafe;
+}
+
+.selection-card input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.selection-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.selection-name {
+  font-weight: 600;
+  margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selection-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Session Summary */
+.session-summary {
+  background: #f9fafb;
+  padding: 16px;
+  border-radius: 8px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.summary-row:last-child {
+  border-bottom: none;
+}
+
+.summary-label {
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.summary-value {
+  font-weight: 700;
+  color: var(--text);
+  text-align: right;
+}
+
+.alert-info {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #93c5fd;
+}
+
+.detail-item.equipment-detail {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.detail-equipment-img-container {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--line);
+}
+
+.detail-equipment-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.detail-equipment-placeholder {
+  font-size: 32px;
+  opacity: 0.3;
+}
+
+.detail-icon.equipment {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .detail-item.equipment-detail {
+    grid-template-columns: 60px 1fr;
+    gap: 8px;
+  }
+  
+  .detail-equipment-img-container {
+    width: 60px;
+    height: 60px;
+  }
+}
+
+@media (max-width: 768px) {
+  .training-steps {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .training-step {
+    flex-basis: calc(50% - 8px);
+  }
+  
+  .training-step::after {
+    display: none;
+  }
+  
+  .selection-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+  <!-- TRAINEES VIEW -->
+<!-- TRAINEES VIEW -->
+<div class="content-view" id="trainees-view">
+  <div class="view-header">
+    <h2>Team Trainees & Athletes</h2>
+    <input class="search" id="traineesSearch" placeholder="Search name or team...">
+  </div>
+  <div class="card">
+    <p class="hint" style="margin-bottom:16px;">View all trainees and athletes assigned to your teams.</p>
+  </div>
+  <div class="table-container">
+    <table class="table" id="traineesTable">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Team</th>
+          <th>Type</th>
+          <th>Semester</th>
+          <th>School Year</th>
+          <th>Date Applied/Joined</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="7">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ACTIVITIES VIEW -->
+<div class="content-view" id="activities-view">
+  <div class="view-header">
+    <h2>Training Activities</h2>
+    <button class="btn btn-primary" id="addActivityBtn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      Add Activity
+    </button>
+  </div>
+
+  <!-- Activity Form -->
+  <div class="card" id="activityFormCard" style="display:none;margin-bottom:20px;">
+    <h3>Training Activity</h3>
+    <form id="activityForm" class="form-grid">
+      <input type="hidden" id="activity_id">
+      
+      <div class="form-group full-width">
+        <label>Activity Name *</label>
+        <input type="text" id="activity_name" required placeholder="e.g., Dribbling Drills">
+      </div>
+
+      <div class="form-group">
+        <label>Duration</label>
+        <input type="text" id="activity_duration" placeholder="e.g., 30 minutes">
+      </div>
+
+      <div class="form-group">
+        <label>Repetition</label>
+        <input type="text" id="activity_repetition" placeholder="e.g., 3 sets of 10">
+      </div>
+
+      <div class="form-group full-width">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" id="activity_active" checked style="width:20px;height:20px;">
+          <span>Active (visible for performance tracking)</span>
+        </label>
+      </div>
+
+      <div class="form-actions full-width">
+        <button type="button" class="btn btn-secondary" id="cancelActivityBtn">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Activity</button>
+      </div>
+      
+      <div class="msg" id="activityMsg"></div>
+    </form>
+  </div>
+
+  <!-- Activities List -->
+  <div class="table-container">
+    <table class="table" id="activitiesTable">
+      <thead>
+        <tr>
+          <th>Activity Name</th>
+          <th>Duration</th>
+          <th>Repetition</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="5">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- REPORTS VIEW -->
+<!-- REPORTS VIEW -->
+<div class="content-view" id="reports-view">
+  <div class="view-header">
+    <h2>Generate Reports</h2>
+  </div>
+
+  <!-- Report Filters -->
+  <div class="card" style="margin-bottom: 20px;">
+    <h3>Report Filters</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Date From</label>
+        <input type="date" id="report_date_from">
+      </div>
+      
+      <div class="form-group">
+        <label>Date To</label>
+        <input type="date" id="report_date_to">
+      </div>
+      
+      <div class="form-group full-width">
+        <label>Team Filter</label>
+        <select id="report_team_filter">
+          <option value="">All Teams</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- Report Types -->
+  <div class="grid2">
+    <div class="card">
+      <h3>📊 Attendance Report</h3>
+      <p style="color:var(--muted);font-size:13px;margin:12px 0;">View attendance rates for training sessions</p>
+      <button class="btn" style="width:100%;" onclick="generateReport('attendance')">
+        Generate Attendance Report
+      </button>
+    </div>
+
+    <div class="card">
+      <h3>⭐ Performance Report</h3>
+      <p style="color:var(--muted);font-size:13px;margin:12px 0;">View player performance ratings and statistics</p>
+      <button class="btn" style="width:100%;" onclick="generateReport('performance')">
+        Generate Performance Report
+      </button>
+    </div>
+
+    <div class="card">
+      <h3>📅 Sessions Report</h3>
+      <p style="color:var(--muted);font-size:13px;margin:12px 0;">View training sessions summary by team</p>
+      <button class="btn" style="width:100%;" onclick="generateReport('sessions')">
+        Generate Sessions Report
+      </button>
+    </div>
+
+    <div class="card">
+      <h3>👥 Player Attendance Detail</h3>
+      <p style="color:var(--muted);font-size:13px;margin:12px 0;">Detailed attendance tracking per player</p>
+      <button class="btn" style="width:100%;" onclick="generateReport('player_attendance')">
+        Generate Player Report
+      </button>
+    </div>
+  </div>
+
+  <!-- Report Results -->
+  <div id="reportResults" style="display:none;margin-top:24px;">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3 id="reportTitle">Report Results</h3>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary" onclick="printReport()">
+            🖨️ Print
+          </button>
+          <button class="btn btn-secondary" onclick="exportReportCSV()">
+            📥 Export CSV
+          </button>
+        </div>
+      </div>
+      <div id="reportContent"></div>
+    </div>
+  </div>
+</div>
+
+  <!-- ATTENDANCE VIEW -->
+  <div class="content-view" id="attendance-view">
+    <div class="view-header">
+      <h2>Session Attendance</h2>
+    </div>
+    
+    <div class="card" style="margin-bottom:20px;">
+      <label>Select Session</label>
+      <select id="attendanceSessionSelect" class="form-select">
+        <option value="">-- Select Session --</option>
+      </select>
+    </div>
+
+    <div id="attendanceContent">
+      <div class="empty-state">Select a session to view/mark attendance</div>
+    </div>
+  </div>
+
+
+
+  <!-- PERFORMANCE VIEW -->
+  <div class="content-view" id="performance-view">
+    <div class="view-header">
+      <h2>Performance Ratings</h2>
+      <button class="btn btn-primary" id="addPerformanceBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Add Rating
+      </button>
+    </div>
+
+    <!-- Performance Form -->
+    <div class="card" id="performanceFormCard" style="display:none;margin-bottom:20px;">
+      <h3>Rate Player Performance</h3>
+      <form id="performanceForm" class="form-grid">
+        <input type="hidden" id="perf_id">
+        
+        <div class="form-group full-width">
+          <label>Player *</label>
+          <select id="perf_person_id" required>
+            <option value="">-- Select Player --</option>
+          </select>
+        </div>
+
+        <div class="form-group full-width">
+          <label>Training Activity *</label>
+          <select id="perf_activity_id" required>
+            <option value="">-- Select Activity --</option>
+          </select>
+        </div>
+
+        <div class="form-group full-width">
+          <label>Team *</label>
+          <select id="perf_team_id" required>
+            <option value="">-- Select Team --</option>
+          </select>
+        </div>
+
+        <div class="form-group full-width">
+          <label>Rating (1-10) *</label>
+          <input type="number" id="perf_rating" min="1" max="10" step="0.1" required placeholder="Enter rating between 1-10">
+          <small style="color:var(--muted);margin-top:4px;">1 = Poor, 5 = Average, 10 = Excellent</small>
+        </div>
+
+        <div class="form-group full-width">
+          <label>Evaluation Date *</label>
+          <input type="date" id="perf_date_eval" required>
+        </div>
+
+        <div class="form-actions full-width">
+          <button type="button" class="btn btn-secondary" id="cancelPerfBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Rating</button>
+        </div>
+        
+        <div class="msg" id="perfMsg"></div>
+      </form>
+    </div>
+
+    <!-- Performance List -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3>Performance History</h3>
+        <input class="search" id="perfSearch" placeholder="Search by player...">
+      </div>
+<!-- Performance List -->
+    <div id="performanceListContainer">
+      <div class="loading">Loading performance ratings...</div>
+    </div>
+    </div>
+  </div>
+
+  <!-- STANDINGS VIEW -->
+  <div class="content-view" id="standings-view">
+    <div class="view-header">
+      <h2>Team Statistics & Rankings</h2>
+    </div>
+    <div class="card">
+      <p class="hint" style="margin-bottom: 16px;">Based on tournament standings for your sport.</p>
+    </div>
+    <div class="table-container">
+      <table class="table" id="standingsTable">
+        <thead>
+          <tr>
+            <th>Tournament</th><th>Team</th><th>GP</th><th>W</th><th>L</th><th>D</th>
+            <th>Gold</th><th>Silver</th><th>Bronze</th>
+          </tr>
+        </thead>
+        <tbody><tr><td colspan="9">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+<!-- TOURNAMENTS VIEW -->
+<div class="content-view" id="tournaments-view">
+<div class="view-header">
+  <h2>Tournament Schedules</h2>
+  <div style="display: flex; gap: 8px;">
+    <button class="btn btn-secondary" id="toggleMyMatches">
+      <span id="toggleMatchesText">Show My Matches Only</span>
+    </button>
+  </div>
+</div>
+  
+  <div class="card">
+    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+      <p class="hint" style="margin: 0; flex: 1;">Upcoming and recent tournament matches.</p>
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted);">
+        <div style="display: flex; align-items: center; gap: 4px;">
+          <div style="width: 16px; height: 16px; background: linear-gradient(90deg, #dbeafe 0%, #eff6ff 100%); border-left: 3px solid var(--primary); border-radius: 2px;"></div>
+          <span>Your team's matches</span>
+        </div>
+        <span>•</span>
+        <div style="display: flex; align-items: center; gap: 4px;">
+          <span>👈</span>
+          <span>Your team</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="table-container">
+    <table class="table" id="matchesTable">
+      <thead><tr><th>Date</th><th>Time</th><th>Game #</th><th>Type</th><th>Venue</th><th>Team A</th><th>Team B</th></tr></thead>
+      <tbody><tr><td colspan="7">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MATCH HISTORY VIEW -->
+<div class="content-view" id="match-history-view">
+  <div class="view-header">
+    <h2>Match History</h2>
+  </div>
+  
+  <div class="card">
+    <p class="hint" style="margin-bottom: 16px;">
+      View your team's match results and upcoming matches. Opponent scores are hidden for privacy.
+    </p>
+  </div>
+  
+  <div id="matchHistoryContainer">
+    <div class="loading">Loading match history...</div>
+  </div>
+</div>
+
+</main>
+
+<!-- Mobile Overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- Update Player Modal -->
+<div class="modal-overlay" id="updatePlayerModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Update Player Information</h3>
+      <button class="modal-close" onclick="closeUpdateModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="updatePlayerForm" class="form">
+        <input type="hidden" id="update_person_id">
+        
+        <div class="form-section">
+          <h4>Personal Information</h4>
+          <label>First Name *</label>
+          <input type="text" id="update_f_name" required>
+          
+          <label>Last Name *</label>
+          <input type="text" id="update_l_name" required>
+          
+          <label>Middle Name</label>
+          <input type="text" id="update_m_name">
+          
+          <label>Date of Birth *</label>
+          <input type="date" id="update_date_birth" required>
+          
+          <label>Blood Type</label>
+          <select id="update_blood_type">
+            <option value="">-- Select --</option>
+            <option value="A+">A+</option>
+            <option value="A-">A-</option>
+            <option value="B+">B+</option>
+            <option value="B-">B-</option>
+            <option value="AB+">AB+</option>
+            <option value="AB-">AB-</option>
+            <option value="O+">O+</option>
+            <option value="O-">O-</option>
+          </select>
+        </div>
+        
+        <div class="form-section">
+          <h4>Academic Information</h4>
+          <label>Course/Program</label>
+          <input type="text" id="update_course">
+        </div>
+        
+        <div class="form-section">
+          <h4>Vital Signs</h4>
+          <div class="form-grid">
+            <div>
+              <label>Height (cm)</label>
+              <input type="number" id="update_height" step="0.1" min="0" max="300">
+            </div>
+            <div>
+              <label>Weight (kg)</label>
+              <input type="number" id="update_weight" step="0.1" min="0" max="300">
+            </div>
+          </div>
+          
+          <label>Blood Pressure</label>
+          <input type="text" id="update_b_pressure">
+          
+          <label>Blood Sugar</label>
+          <input type="text" id="update_b_sugar">
+          
+          <label>Cholesterol</label>
+          <input type="text" id="update_b_choles">
+        </div>
+        
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeUpdateModal()">Cancel</button>
+          <button type="submit" class="btn">Update Player</button>
+        </div>
+        
+        <div class="msg" id="updateMsg" style="display:none;"></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: white;
+  padding: 20px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: white;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.stat-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+  word-break: break-word;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 6px;
+  font-weight: 600;
+}
+
+.overview-section {
+  margin-top: 24px;
+}
+
+.overview-section h2 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--text);
+}
+
+.data-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.data-card {
+  background: white;
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--line);
+  transition: all 0.2s;
+}
+
+.data-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.data-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.data-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.data-card-meta {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.form-group input,
+.form-group select,
+.form-select {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text);
+  background: white;
+  transition: all 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.badge.active, .badge.present {
+  background: #d1fae5;
+  color: #047857;
+  border: 1px solid #6ee7b7;
+}
+
+.badge.inactive, .badge.absent {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+.rating-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.rating-excellent {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.rating-good {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.rating-average {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.rating-poor {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.attendance-checkbox {
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  accent-color: var(--success);
+}
+
+.btn-icon {
+  padding: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-icon:hover {
+  background: #f9fafb;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.modal-overlay.active {
+  display: flex;
+}
+
+.modal-content {
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  margin: auto;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: #f3f4f6;
+  border-radius: 8px;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  background: #e5e7eb;
+  color: var(--text);
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.form-section {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.form-section:last-of-type {
+  border-bottom: none;
+}
+
+.form-section h4 {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.modal-actions .btn {
+  flex: 1;
+}
+
+@media (max-width: 1024px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .data-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .stat-card {
+    padding: 16px;
+  }
+  
+  .modal-content {
+    max-height: 95vh;
+  }
+  
+  .modal-header,
+  .modal-body {
+    padding: 16px;
+  }
+  
+  .modal-actions {
+    flex-direction: column-reverse;
+  }
+  
+  .modal-actions .btn {
+    width: 100%;
+  }
+}
+</style>
+
+<script src="<?= BASE_URL ?>/coach/score-display-helper.js"></script>
+
+<script>
+  window.BASE_URL = "<?= BASE_URL ?>";
+  window.COACH_CONTEXT = { 
+    person_id: <?= (int)$coach_person_id ?>,
+    sports_id: <?= (int)$sports_id ?>,
+    sports_name: "<?= htmlspecialchars($sports_name) ?>"
+  };
+</script>
+
+<script src="<?= BASE_URL ?>/coach/coach.js"></script>
+
+</body>
+</html> 
