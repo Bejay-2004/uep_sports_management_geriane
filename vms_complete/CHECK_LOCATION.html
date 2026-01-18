@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location Check - UEP Sports</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #003f87 0%, #0066cc 50%, #4a90e2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 700px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            border: 4px solid #FFB81C;
+        }
+        h1 {
+            color: #003f87;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 28px;
+        }
+        .success {
+            background: #d1fae5;
+            border-left: 4px solid #10b981;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            color: #065f46;
+        }
+        .info {
+            background: #dbeafe;
+            border-left: 4px solid #3b82f6;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            color: #1e40af;
+        }
+        code {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            word-break: break-all;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            margin: 12px 0;
+            background: linear-gradient(135deg, #FFB81C, #E6A817);
+            color: #111827;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 700;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 184, 28, 0.5);
+        }
+        .location {
+            font-size: 18px;
+            font-weight: 700;
+            margin: 20px 0;
+            text-align: center;
+        }
+        ul {
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+        li {
+            margin: 8px 0;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✅ Found Your Project!</h1>
+        
+        <div class="success">
+            <strong>🎉 Success!</strong><br>
+            If you're reading this, your project folder is accessible!
+        </div>
+
+        <div class="location">
+            <strong>Your Current URL Path:</strong><br>
+            <code id="currentPath"></code>
+        </div>
+
+        <div class="info">
+            <strong>📋 Save These URLs:</strong><br><br>
+            
+            <strong>Test Connection:</strong><br>
+            <code id="testUrl"></code><br><br>
+            
+            <strong>Main Website:</strong><br>
+            <code id="mainUrl"></code><br><br>
+            
+            <strong>Login Page:</strong><br>
+            <code id="loginUrl"></code>
+        </div>
+
+        <a href="#" id="testLink" class="btn">🔍 Test Database Connection</a>
+        <a href="#" id="mainLink" class="btn">🏠 Go to Main Website</a>
+
+        <div class="info" style="margin-top: 30px; font-size: 14px;">
+            <strong>💡 Next Steps:</strong>
+            <ol>
+                <li>Click "Test Database Connection" above</li>
+                <li>Make sure WAMP is running (GREEN icon)</li>
+                <li>Create database in phpMyAdmin</li>
+                <li>Import SQL file</li>
+                <li>Access your website!</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // Get the current path
+        const fullPath = window.location.pathname;
+        const basePath = fullPath.substring(0, fullPath.lastIndexOf('/'));
+        
+        // Display current path
+        document.getElementById('currentPath').textContent = basePath;
+        
+        // Build URLs
+        const testUrl = basePath + '/test_connection.php';
+        const mainUrl = basePath + '/index.php';
+        const loginUrl = basePath + '/auth/login.php';
+        
+        // Display URLs
+        document.getElementById('testUrl').textContent = 'http://' + window.location.host + testUrl;
+        document.getElementById('mainUrl').textContent = 'http://' + window.location.host + mainUrl;
+        document.getElementById('loginUrl').textContent = 'http://' + window.location.host + loginUrl;
+        
+        // Set link hrefs
+        document.getElementById('testLink').href = testUrl;
+        document.getElementById('mainLink').href = mainUrl;
+    </script>
+</body>
+</html>

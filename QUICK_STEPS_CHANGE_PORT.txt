@@ -1,0 +1,88 @@
+╔════════════════════════════════════════════════════════════════╗
+║                                                                ║
+║   🔧 QUICK GUIDE: Change WAMP MySQL Port to 3308             ║
+║   (5 Easy Steps)                                              ║
+║                                                                ║
+╚════════════════════════════════════════════════════════════════╝
+
+✅ Your config files are ALREADY set to 3308
+   Just need to change WAMP to match!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 STEP-BY-STEP:
+
+1️⃣  STOP WAMP
+    └─ Left-click WAMP icon → "Stop All Services"
+    └─ Wait for icon to turn white/gray
+
+2️⃣  OPEN CONFIG FILE
+    └─ Left-click WAMP icon → MySQL → MySQL 8.x.x → my.ini
+    └─ File opens in Notepad
+
+3️⃣  CHANGE PORT (Change BOTH!)
+    └─ Press Ctrl+F, search for: port=
+    └─ Find: port=3306 (under [mysqld])
+    └─ Change to: port=3308
+    └─ Find AGAIN: port=3306 (under [client])
+    └─ Change to: port=3308
+
+4️⃣  SAVE & CLOSE
+    └─ Press Ctrl+S
+    └─ Close Notepad
+
+5️⃣  START WAMP
+    └─ Left-click WAMP icon → "Start All Services"
+    └─ Wait for GREEN icon ✅
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🧪 TEST IT WORKS:
+
+Open in browser:
+http://localhost/uep_sports_management_geriane/vms_complete/test_connection.php
+
+Should show:
+✅ MySQL Connection on port 3308
+✅ All green checkmarks
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️  IMPORTANT:
+
+Change port in my.ini TWO times:
+   [mysqld]
+   port=3308        ← First one
+   
+   [client]
+   port=3308        ← Second one
+
+BOTH must be changed!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📁 WHY PORT 3308?
+
+XAMPP MySQL → Port 3306 (already in use)
+WAMP MySQL  → Port 3308 (no conflict!)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 Need detailed help?
+   → Open: HOW_TO_CHANGE_WAMP_PORT_TO_3308.md
+
+🎯 After port change works:
+   1. Create database in phpMyAdmin
+   2. Import SQL file
+   3. Access your website!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ SUCCESS CHECKLIST:
+
+□ WAMP icon is GREEN
+□ my.ini has port=3308 (both places)
+□ Test page shows "Connected on port 3308"
+□ No connection errors
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

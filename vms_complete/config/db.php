@@ -1,11 +1,16 @@
 <?php
-// config/db.php
+// config/db.php - Database Configuration for WAMP Server
 
 $host = "localhost";
-$port = "3308"; // ✅ WAMP MySQL port
+$port = "3308"; // ✅ WAMP MySQL port (3308 to avoid conflict with XAMPP on 3306)
 $dbname = "uep_sports_management";
 $user = "root";
-$pass = "garinbellyjoe2004";
+
+// ⚙️ Password Configuration
+// WAMP default: empty password ""
+// If you set a password in MySQL, update it here:
+$pass = ""; // WAMP default (empty password)
+
 $charset = "utf8mb4";
 
 $dsn = "mysql:host=$host;port=$port;dbname=$dbname;charset=$charset";

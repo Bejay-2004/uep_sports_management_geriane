@@ -4,13 +4,20 @@
   --text: #111827;
   --muted: #6b7280;
   --line: #e5e7eb;
-  --shadow: 0 14px 35px rgba(0,0,0,.08);
+  --shadow: 0 6px 20px rgba(0,0,0,.08);
   --radius: 14px;
-  --primary: #f59e0b;
+  
+  /* UEP Colors */
+  --primary: #0066cc;
+  --primary-dark: #003f87;
+  --primary-light: #4a90e2;
+  --accent: #FFB81C;
+  --accent-dark: #E6A817;
+  
   --success: #10b981;
   --danger: #ef4444;
   --warning: #f59e0b;
-  --sidebar-width: 260px;
+  --sidebar-width: 280px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }

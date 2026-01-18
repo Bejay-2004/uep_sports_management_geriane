@@ -1,0 +1,75 @@
+========================================
+🌐 HOW TO ACCESS YOUR UEP SPORTS WEBSITE
+========================================
+
+❌ WRONG (404 Error):
+   http://localhost/
+
+✅ CORRECT URLs TO USE:
+
+Option 1 (Full path to landing page):
+   http://localhost/uep_sports_management_geriane/vms_complete/
+
+Option 2 (Direct to index.php):
+   http://localhost/uep_sports_management_geriane/vms_complete/index.php
+
+Option 3 (Test database connection first):
+   http://localhost/uep_sports_management_geriane/vms_complete/test_connection.php
+
+Option 4 (Direct to login):
+   http://localhost/uep_sports_management_geriane/vms_complete/auth/login.php
+
+========================================
+
+📋 TROUBLESHOOTING CHECKLIST:
+
+1. ✅ WAMP Server is running (GREEN icon in system tray)
+2. ✅ Apache is running on Port 80 (you confirmed this!)
+3. ✅ Project folder is in correct location:
+   C:\wamp64\www\uep_sports_management_geriane\vms_complete\
+
+4. ⚠️ Check your project folder location:
+   - Open: C:\wamp64\www\
+   - Make sure you see: uep_sports_management_geriane folder
+   - Inside that folder, there should be: vms_complete folder
+
+========================================
+
+🔍 IF URL STILL DOESN'T WORK:
+
+Problem: Folder is in different location
+Solution: Check where your project actually is
+
+1. Find your WAMP www folder:
+   - For WAMP 64-bit: C:\wamp64\www\
+   - For WAMP 32-bit: C:\wamp\www\
+
+2. Look for your project folder name in that directory
+
+3. Use URL based on actual folder name:
+   http://localhost/[YOUR_FOLDER_NAME]/vms_complete/
+
+========================================
+
+📁 EXAMPLE: If your folder structure looks like this:
+
+C:\wamp64\www\
+  └── uep_sports_management_geriane\
+      └── vms_complete\
+          └── index.php
+
+Then use: http://localhost/uep_sports_management_geriane/vms_complete/
+
+========================================
+
+🎯 QUICK TEST:
+
+Step 1: Copy this URL and paste in browser:
+http://localhost/uep_sports_management_geriane/vms_complete/test_connection.php
+
+Step 2: You should see a blue page with connection test results
+
+Step 3: If it works, go to:
+http://localhost/uep_sports_management_geriane/vms_complete/
+
+========================================

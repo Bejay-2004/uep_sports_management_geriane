@@ -1,0 +1,53 @@
+========================================
+HOW TO MOVE YOUR PROJECT TO WAMP'S WWW FOLDER
+========================================
+
+CURRENT LOCATION:
+C:\Users\DANZE\Documents\GitHub\uep_sports_management_geriane\
+
+TARGET LOCATION (Where Apache can serve files):
+C:\wamp64\www\
+
+========================================
+STEPS TO MOVE:
+========================================
+
+1. Open File Explorer
+
+2. Navigate to:
+   C:\Users\DANZE\Documents\GitHub\
+
+3. Right-click on "uep_sports_management_geriane" folder
+   Click "Copy"
+
+4. Navigate to:
+   C:\wamp64\www\
+
+5. Right-click in the empty space
+   Click "Paste"
+
+6. Wait for the copy to complete
+
+========================================
+AFTER MOVING - USE THESE URLS:
+========================================
+
+Landing Page:
+http://localhost/uep_sports_management_geriane/vms_complete/index.php
+
+Login Page:
+http://localhost/uep_sports_management_geriane/vms_complete/auth/login.php
+
+Test Connection:
+http://localhost/uep_sports_management_geriane/vms_complete/quick_db_test.php
+
+========================================
+OR - CREATE A VIRTUAL HOST (ADVANCED)
+========================================
+
+If you want to keep the project in Documents folder,
+you need to configure Apache Virtual Host.
+
+Let me know if you want help with that!
+
+========================================

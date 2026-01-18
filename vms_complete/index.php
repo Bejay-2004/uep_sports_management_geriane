@@ -35,12 +35,15 @@ try {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>UEP Sports Management System</title>
+  <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/uep-theme.css">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --primary: #111827;
-      --accent: #3b82f6;
+      --primary: #003f87;
+      --primary-light: #0066cc;
+      --accent: #FFB81C;
+      --accent-dark: #E6A817;
       --text: #111827;
       --text-muted: #6b7280;
       --bg: #ffffff;
@@ -58,13 +61,14 @@ try {
 
     /* Logout Banner */
     .logout-banner {
-      background: #059669;
+      background: linear-gradient(135deg, #10b981, #059669);
       color: white;
       padding: 12px 16px;
       text-align: center;
       font-weight: 600;
       font-size: 13px;
       position: relative;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
     }
 
     .close-banner {
@@ -79,13 +83,13 @@ try {
 
     /* Header */
     .header {
-      background: var(--primary);
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
       color: white;
       padding: 16px;
       position: sticky;
       top: 0;
       z-index: 100;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 12px rgba(0, 63, 135, 0.3);
     }
 
     .header-content {
@@ -138,20 +142,37 @@ try {
     }
 
     .btn-primary {
-      background: white;
-      color: var(--primary);
+      background: var(--accent);
+      color: #111827;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(255, 184, 28, 0.35);
     }
 
     .btn-primary:hover {
-      background: #f3f4f6;
+      background: var(--accent-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(255, 184, 28, 0.45);
     }
 
     /* Hero Section - Compact */
     .hero {
-      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 50%, #4a90e2 100%);
       color: white;
       padding: 32px 16px 48px;
       text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="none"/><circle cx="50" cy="50" r="40" fill="%23FFB81C" opacity="0.05"/></svg>');
+      opacity: 0.3;
     }
 
     .hero-content {
@@ -161,14 +182,16 @@ try {
 
     .hero-badge {
       display: inline-block;
-      background: rgba(59, 130, 246, 0.2);
-      color: #60a5fa;
+      background: rgba(255, 184, 28, 0.25);
+      color: var(--accent);
       padding: 6px 14px;
       border-radius: 16px;
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 700;
       margin-bottom: 16px;
-      border: 1px solid rgba(59, 130, 246, 0.3);
+      border: 2px solid rgba(255, 184, 28, 0.5);
+      position: relative;
+      z-index: 1;
     }
 
     .hero h2 {
@@ -203,6 +226,14 @@ try {
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
       text-align: center;
+      border: 2px solid transparent;
+      transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
     }
 
     .stat-icon {
@@ -213,7 +244,10 @@ try {
     .stat-number {
       font-size: 24px;
       font-weight: 800;
-      color: var(--accent);
+      background: linear-gradient(135deg, var(--primary-light), var(--primary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
       margin-bottom: 4px;
     }
 
@@ -239,13 +273,14 @@ try {
 
     .section-badge {
       display: inline-block;
-      background: var(--bg-gray);
-      color: var(--accent);
+      background: rgba(255, 184, 28, 0.15);
+      color: #8B6914;
       padding: 6px 14px;
       border-radius: 16px;
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 700;
       margin-bottom: 12px;
+      border: 2px solid rgba(255, 184, 28, 0.3);
     }
 
     .section-header h2 {
@@ -309,12 +344,13 @@ try {
       justify-content: center;
       width: 20px;
       height: 20px;
-      background: var(--accent);
-      color: white;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+      color: var(--primary);
       border-radius: 50%;
       font-size: 11px;
       font-weight: 700;
       flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(255, 184, 28, 0.3);
     }
 
     /* Sports Grid - Compact */
@@ -338,14 +374,19 @@ try {
       box-shadow: 0 4px 12px rgba(0,0,0,0.12);
       border-color: var(--accent);
     }
+    
+    .sport-card:hover .sport-image {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    }
 
     .sport-image {
       height: 100px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 40px;
+      transition: all 0.3s ease;
     }
 
     .sport-content {
@@ -392,12 +433,13 @@ try {
       width: 56px;
       height: 56px;
       margin: 0 auto 16px;
-      background: linear-gradient(135deg, var(--accent) 0%, #2563eb 100%);
+      background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
       border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 28px;
+      box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
     }
 
     .feature-card h3 {
@@ -414,10 +456,22 @@ try {
 
     /* CTA - Compact */
     .cta {
-      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
       color: white;
       text-align: center;
       padding: 48px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .cta::before {
+      content: '🏆';
+      position: absolute;
+      font-size: 200px;
+      opacity: 0.05;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
     }
 
     .cta h2 {
@@ -433,6 +487,13 @@ try {
       max-width: 600px;
       margin-left: auto;
       margin-right: auto;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .cta .btn-primary {
+      position: relative;
+      z-index: 1;
     }
 
     /* Footer - Compact */
@@ -741,7 +802,7 @@ try {
     <p>
       Login to access your dashboard and start managing your tournaments today.
     </p>
-    <a href="<?= BASE_URL ?>/auth/login.php" class="btn btn-primary" style="font-size: 14px; padding: 10px 24px;">
+    <a href="<?= BASE_URL ?>/auth/login.php" class="btn btn-primary" style="font-size: 14px; padding: 12px 28px;">
       Access Dashboard →
     </a>
   </section>
