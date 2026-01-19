@@ -1,8 +1,10 @@
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
-const personId = window.SPECTATOR_CONTEXT.person_id;
-const sportsId = window.SPECTATOR_CONTEXT.sports_id;
+// Handle public access (no user logged in)
+const personId = window.SPECTATOR_CONTEXT?.person_id || 0;
+const sportsId = window.SPECTATOR_CONTEXT?.sports_id || 0;
+const isLoggedIn = window.SPECTATOR_CONTEXT?.is_logged_in || false;
 
 // Global active tournament tracker
 let activeTournamentId = null;

@@ -1,20 +1,21 @@
 <?php
+// Public spectator dashboard - no authentication required
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/db.php';
-require_once __DIR__ . "/../auth/guard.php";
 
-// Accept 'Spectator' role
+// Check if user is logged in (optional - for display purposes)
+$is_logged_in = isset($_SESSION['user']) && is_array($_SESSION['user']);
 $user_role = $_SESSION['user']['user_role'] ?? '';
 $normalized_role = strtolower(str_replace(['/', ' '], '_', trim($user_role)));
 
-if ($normalized_role !== 'spectator') {
-    http_response_code(403);
-    die('Access denied. This page is for spectators only.');
-}
-
-$full_name = $_SESSION['user']['full_name'] ?? 'Spectator';
-$person_id = (int)$_SESSION['user']['person_id'];
-$sports_id = (int)($_SESSION['user']['sports_id'] ?? 0);
+// Set default values for public access
+$full_name = $is_logged_in ? ($_SESSION['user']['full_name'] ?? 'Spectator') : 'Guest';
+$person_id = $is_logged_in ? (int)($_SESSION['user']['person_id'] ?? 0) : 0;
+$sports_id = $is_logged_in ? (int)($_SESSION['user']['sports_id'] ?? 0) : 0;
 
 // Get initials for avatar
 $names = explode(' ', $full_name);
@@ -104,16 +105,27 @@ if ($sports_id > 0) {
   </nav>
 
   <div class="sidebar-footer">
-    <form method="post" action="<?= BASE_URL ?>/auth/logout.php" style="margin:0;width:100%;">
-      <button type="submit" class="logout-link">
+    <?php if ($is_logged_in): ?>
+      <form method="post" action="<?= BASE_URL ?>/auth/logout.php" style="margin:0;width:100%;">
+        <button type="submit" class="logout-link">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          <span>Logout</span>
+        </button>
+      </form>
+    <?php else: ?>
+      <a href="<?= BASE_URL ?>/auth/login.php" class="logout-link" style="text-decoration:none;display:flex;align-items:center;gap:8px;color:inherit;">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-          <polyline points="16 17 21 12 16 7"></polyline>
-          <line x1="21" y1="12" x2="9" y2="12"></line>
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+          <polyline points="10 17 15 12 10 7"></polyline>
+          <line x1="15" y1="12" x2="3" y2="12"></line>
         </svg>
-        <span>Logout</span>
-      </button>
-    </form>
+        <span>Login</span>
+      </a>
+    <?php endif; ?>
   </div>
 </aside>
 
@@ -136,7 +148,7 @@ if ($sports_id > 0) {
       <div class="user-avatar"><?= htmlspecialchars($initials) ?></div>
       <div class="user-details">
         <div class="user-name"><?= htmlspecialchars($full_name) ?></div>
-        <div class="user-role">Spectator</div>
+        <div class="user-role"><?= $is_logged_in ? htmlspecialchars($user_role) : 'Public Viewer' ?></div>
       </div>
     </div>
   </div>
@@ -310,7 +322,8 @@ if ($sports_id > 0) {
   window.BASE_URL = "<?= BASE_URL ?>";
   window.SPECTATOR_CONTEXT = {
     person_id: <?= $person_id ?>,
-    sports_id: <?= $sports_id ?>
+    sports_id: <?= $sports_id ?>,
+    is_logged_in: <?= $is_logged_in ? 'true' : 'false' ?>
   };
 
   

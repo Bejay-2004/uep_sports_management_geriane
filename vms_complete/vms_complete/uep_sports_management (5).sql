@@ -1092,7 +1092,7 @@ INSERT INTO `tbl_sports` (`sports_id`, `sports_name`, `team_individual`, `weight
 (14, 'Baseball', 'team', NULL, 'Mixed', 9, 5, 1),
 (15, 'Softball', 'team', NULL, 'Mixed', 9, 5, 1),
 (16, 'Dance', 'individual', 'Light', 'Mixed', NULL, NULL, 1),
-(17, 'Fotsal', 'team', 'Light', 'Mixed', 23, 2, 1),
+(17, 'Futsal', 'team', 'Light', 'Mixed', 23, 2, 1),
 (18, 'Mobile Legends', 'team', 'Heavy', 'Male', 5, 1, 1),
 (19, 'League of Legends', 'team', 'Medium', 'Mixed', 5, 1, 1),
 (20, 'Dance Sport - Women Solo', 'individual', NULL, 'Female', 1, 0, 1),

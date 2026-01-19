@@ -154,6 +154,28 @@ try {
       box-shadow: 0 6px 16px rgba(255, 184, 28, 0.45);
     }
 
+    .btn-spectator {
+      padding: 8px 20px !important;
+      background: #FFB81C !important;
+      color: #111827 !important;
+      font-weight: 700 !important;
+      font-size: 13px !important;
+      border-radius: 6px !important;
+      text-decoration: none !important;
+      box-shadow: 0 4px 12px rgba(255, 184, 28, 0.4) !important;
+      border: 2px solid white !important;
+      display: inline-block !important;
+      cursor: pointer !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+    }
+
+    .btn-spectator:hover {
+      background: #E6A817 !important;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(255, 184, 28, 0.5) !important;
+    }
+
     /* Hero Section - Compact */
     .hero {
       background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 50%, #4a90e2 100%);
@@ -555,6 +577,16 @@ try {
       .hero h2 { font-size: 24px; }
       .hero p { font-size: 14px; }
       
+      .header-content {
+        flex-wrap: wrap;
+      }
+      
+      .header-content > div:last-child {
+        width: 100%;
+        justify-content: center;
+        margin-top: 12px;
+      }
+      
       .stats {
         grid-template-columns: 1fr;
         margin-top: 16px;
@@ -605,6 +637,16 @@ try {
   </div>
   <?php endif; ?>
 
+  <!-- Spectator Access Banner - VERY PROMINENT -->
+  <div style="background: #FFB81C; padding: 20px; text-align: center; box-shadow: 0 4px 12px rgba(255, 184, 28, 0.4); position: relative; z-index: 100; border-bottom: 3px solid #E6A817;">
+    <div style="max-width: 1200px; margin: 0 auto;">
+      <a href="/uep_sports_management_geriane/vms_complete/spectator/dashboard.php" style="display: inline-block; padding: 14px 32px; background: #111827; color: #FFB81C; font-weight: 900; font-size: 18px; border-radius: 8px; text-decoration: none; box-shadow: 0 4px 12px rgba(0,0,0,0.4); transition: all 0.3s; border: 2px solid #111827;">
+        👁️ VIEW AS PUBLIC SPECTATOR - CLICK HERE →
+      </a>
+      <p style="margin-top: 12px; font-size: 14px; color: #111827; font-weight: 600;">No login required • View tournaments, matches, and standings</p>
+    </div>
+  </div>
+
   <!-- Header -->
   <header class="header">
     <div class="header-content">
@@ -617,7 +659,10 @@ try {
           <p>Sports Management System</p>
         </div>
       </div>
-      <a href="<?= BASE_URL ?>/auth/login.php" class="btn btn-primary">Login</a>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <a href="/uep_sports_management_geriane/vms_complete/spectator/dashboard.php" style="padding: 8px 20px; background-color: #FFB81C; color: #111827; font-weight: 700; font-size: 13px; border-radius: 6px; text-decoration: none; box-shadow: 0 4px 12px rgba(255, 184, 28, 0.4); border: 2px solid white; display: inline-block; cursor: pointer;">👁️ Spectator</a>
+        <a href="<?php echo BASE_URL; ?>/auth/login.php" class="btn btn-primary">Login</a>
+      </div>
     </div>
   </header>
 
@@ -627,6 +672,32 @@ try {
       <div class="hero-badge">Developed by UEP-BSIT-STUDENTS</div>
       <h2>Manage Your Sports Events with Excellence</h2>
       <p>Comprehensive platform for managing tournaments, teams, athletes, and competitions.</p>
+      
+      <!-- Public Spectator Access Button -->
+      <div style="margin: 30px auto; text-align: center;">
+        <a href="/uep_sports_management_geriane/vms_complete/spectator/dashboard.php" style="display: inline-block; padding: 16px 40px; background: #FFB81C; color: #111827; font-weight: 800; font-size: 18px; border-radius: 10px; text-decoration: none; box-shadow: 0 6px 20px rgba(255, 184, 28, 0.5); border: 3px solid rgba(255,255,255,0.3); transition: all 0.3s;">
+          👁️ VIEW AS PUBLIC SPECTATOR
+        </a>
+        <p style="margin-top: 12px; font-size: 14px; color: rgba(255,255,255,0.9); font-weight: 500;">
+          No account needed • View tournaments, matches, and standings
+        </p>
+      </div>
+      
+      <!-- Prominent Spectator Button -->
+      <div style="margin: 32px auto 24px; text-align: center; max-width: 600px;">
+        <a href="/uep_sports_management_geriane/vms_complete/spectator/dashboard.php" style="display: inline-block; padding: 18px 40px; background: #FFB81C; color: #111827; font-weight: 800; font-size: 18px; border-radius: 12px; text-decoration: none; box-shadow: 0 8px 24px rgba(255, 184, 28, 0.5); transition: all 0.3s; border: 3px solid rgba(255,255,255,0.3);">
+          👁️ VIEW AS PUBLIC SPECTATOR
+        </a>
+        <p style="margin-top: 16px; font-size: 14px; opacity: 0.9; color: white;">
+          No login required • View tournaments, matches, and standings
+        </p>
+      </div>
+      
+      <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 16px;">
+        <a href="<?= BASE_URL ?>/auth/login.php" class="btn btn-primary" style="font-size: 14px; padding: 12px 28px; background: rgba(255,255,255,0.2); border: 2px solid white; color: white;">
+          Login to Dashboard
+        </a>
+      </div>
     </div>
   </section>
 
@@ -648,6 +719,19 @@ try {
       <div class="stat-label">Tournaments</div>
     </div>
   </div>
+
+  <!-- Spectator Access Button Section -->
+  <section style="padding: 40px 16px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); text-align: center; margin-top: 24px; border-top: 3px solid #FFB81C; border-bottom: 3px solid #FFB81C;">
+    <div style="max-width: 800px; margin: 0 auto;">
+      <h3 style="font-size: 26px; font-weight: 800; margin-bottom: 16px; color: #003f87;">👁️ PUBLIC VIEWER ACCESS</h3>
+      <p style="font-size: 16px; color: #6b7280; margin-bottom: 28px; line-height: 1.6; font-weight: 500;">
+        View live tournaments, match schedules, team standings, and sports information without logging in.
+      </p>
+      <a href="/uep_sports_management_geriane/vms_complete/spectator/dashboard.php" style="display: inline-block; padding: 16px 36px; background: #FFB81C; color: #111827; font-weight: 800; font-size: 17px; border-radius: 10px; text-decoration: none; box-shadow: 0 6px 20px rgba(255, 184, 28, 0.5); transition: all 0.3s; border: 2px solid rgba(0,0,0,0.1);">
+        🎯 VIEW AS PUBLIC SPECTATOR →
+      </a>
+    </div>
+  </section>
 
   <!-- About -->
   <section class="about section">
@@ -733,7 +817,7 @@ try {
         <div class="sport-card">
           <div class="sport-image"><?= $icon ?></div>
           <div class="sport-content">
-            <h3><?= htmlspecialchars($sport['sports_name']) ?></h3>
+            <h3><?= htmlspecialchars(str_replace('Fotsal', 'Futsal', $sport['sports_name'])) ?></h3>
             <div class="sport-meta">
               <span class="sport-badge">
                 <?= $sport['team_individual'] === 'team' ? 'Team' : 'Individual' ?>
@@ -800,11 +884,16 @@ try {
   <section class="cta">
     <h2>Ready to Get Started?</h2>
     <p>
-      Login to access your dashboard and start managing your tournaments today.
+      View tournaments, matches, and standings as a spectator, or login to access your dashboard.
     </p>
-    <a href="<?= BASE_URL ?>/auth/login.php" class="btn btn-primary" style="font-size: 14px; padding: 12px 28px;">
-      Access Dashboard →
-    </a>
+    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+      <a href="/uep_sports_management_geriane/vms_complete/spectator/dashboard.php" class="btn btn-primary" style="font-size: 14px; padding: 12px 28px; background: rgba(255,255,255,0.2); border: 2px solid white; color: white;">
+        View as Spectator →
+      </a>
+      <a href="<?php echo BASE_URL; ?>/auth/login.php" class="btn btn-primary" style="font-size: 14px; padding: 12px 28px;">
+        Login to Dashboard →
+      </a>
+    </div>
   </section>
 
   <!-- Footer -->
@@ -828,6 +917,7 @@ try {
       <div class="footer-section">
         <h4>User Roles</h4>
         <ul>
+          <li><a href="/uep_sports_management_geriane/vms_complete/spectator/dashboard.php">Spectator (Public)</a></li>
           <li><a href="#">Administrator</a></li>
           <li><a href="#">Tournament Manager</a></li>
           <li><a href="#">Coach</a></li>

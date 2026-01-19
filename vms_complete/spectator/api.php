@@ -1,5 +1,5 @@
 <?php
-// spectator/api.php - COMPLETE FIXED VERSION
+// spectator/api.php - PUBLIC API (No authentication required)
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -7,21 +7,14 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/db.php';
-require_once __DIR__ . '/../auth/guard.php';
 
-// Accept 'Spectator' role (case-insensitive)
-$user_role = $_SESSION['user']['user_role'] ?? '';
-$normalized_role = strtolower(str_replace(['/', ' '], '_', trim($user_role)));
-
-if ($normalized_role !== 'spectator') {
-    http_response_code(403);
-    out(['ok' => false, 'message' => 'Access denied. Spectators only.']);
-}
+// Public API - no authentication required
+// Check if user is logged in (optional - for future use)
+$is_logged_in = isset($_SESSION['user']) && is_array($_SESSION['user']);
+$user_id = $is_logged_in ? (int)($_SESSION['user']['user_id'] ?? 0) : 0;
+$person_id = $is_logged_in ? (int)($_SESSION['user']['person_id'] ?? 0) : 0;
 
 header("Content-Type: application/json; charset=utf-8");
-
-$user_id = (int)$_SESSION['user']['user_id'];
-$person_id = (int)$_SESSION['user']['person_id'];
 
 $action = $_GET['action'] ?? '';
 

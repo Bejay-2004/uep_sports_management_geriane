@@ -2,9 +2,10 @@
 session_start();
 require_once "../config/db.php";
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../config/recaptcha.php';
 
-// Check if user is already logged in
-if (isset($_SESSION['user']) && isset($_SESSION['user']['user_id'])) {
+// Check if user is already logged in (unless force parameter is set)
+if (isset($_SESSION['user']) && isset($_SESSION['user']['user_id']) && !isset($_GET['force'])) {
   $role = trim($_SESSION['user']['user_role'] ?? '');
   
   // Redirect based on role (case-insensitive)
@@ -54,10 +55,19 @@ $error = "";
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $username  = trim($_POST['username'] ?? '');
   $password  = trim($_POST['password'] ?? '');
+  $recaptcha_response = $_POST['g-recaptcha-response'] ?? '';
+
+  // Verify reCAPTCHA first
+  if (RECAPTCHA_ENABLED) {
+    $recaptcha_result = verify_recaptcha($recaptcha_response);
+    if (!$recaptcha_result['success']) {
+      $error = $recaptcha_result['error'];
+    }
+  }
 
   if (!$username || !$password) {
     $error = "Username and password are required.";
-  } else {
+  } elseif (!$error) {
 
     $stmt = $pdo->prepare("
       SELECT 
@@ -344,6 +354,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta charset="UTF-8">
   <title>Login - UEP Sports Management</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <?php if (RECAPTCHA_ENABLED): ?>
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+  <?php endif; ?>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -530,6 +543,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     color: #003f87;
     transform: translateX(-2px);
   }
+  .recaptcha-container {
+    margin: 20px 0;
+    display: flex;
+    justify-content: center;
+  }
+  .recaptcha-container > div {
+    margin: 0 auto;
+  }
 </style>
 </head>
 <body>
@@ -555,6 +576,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <input type="checkbox" id="showPassword" onclick="togglePassword()">
       <label for="showPassword">Show password</label>
     </div>
+
+    <?php if (RECAPTCHA_ENABLED): ?>
+    <div class="recaptcha-container">
+      <div class="g-recaptcha" data-sitekey="<?= htmlspecialchars(RECAPTCHA_SITE_KEY) ?>"></div>
+    </div>
+    <?php endif; ?>
 
     <button type="submit">Login</button>
 
